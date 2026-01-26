@@ -7,7 +7,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Marked -->
@@ -63,7 +63,6 @@
 
         .main-frame.collapsed { margin-left: 72px; }
 
-        /* Utility class for native views that need padding */
         .native-view-container {
             padding: 32px;
             height: 100%;
@@ -94,7 +93,6 @@
         .sidebar.collapsed .nav-link span { display: none; }
         .sidebar.collapsed .nav-link { justify-content: center; padding: 12px; }
 
-        /* Video Classroom Styles */
         .video-container {
             background: #0f172a;
             border-radius: 16px;
@@ -107,17 +105,15 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1); /* Mirror effect */
+            transform: scaleX(-1);
         }
 
-        /* Animations */
         .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes fadeIn { 
             from { opacity: 0; transform: translateY(10px); } 
             to { opacity: 1; transform: translateY(0); } 
         }
 
-        /* Splash Screen */
         #splash-screen {
             position: fixed;
             inset: 0;
@@ -151,7 +147,7 @@
         </div>
     </div>
 
-    <!-- LOGIN/SIGNUP MODAL (Secure Gatekeeper) -->
+    <!-- LOGIN/SIGNUP MODAL -->
     <div id="login-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden transition-opacity">
         <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl transform scale-100 transition-transform">
             <div class="flex justify-between items-center mb-6">
@@ -203,6 +199,11 @@
         </div>
 
         <div class="flex items-center gap-6">
+            <!-- Added Guest Actions to prevent JS errors if referenced -->
+            <div id="header-guest-actions" class="hidden">
+                <button onclick="document.getElementById('login-modal').classList.remove('hidden')" class="text-sm font-bold text-slate-600 hover:text-blue-600">Login</button>
+            </div>
+
             <div id="header-user-profile" class="flex items-center gap-3 cursor-pointer" onclick="window.app.showView('profile')">
                 <div class="text-right hidden sm:block">
                     <p id="nav-user-name" class="text-slate-700 text-sm font-semibold">Guest</p>
@@ -221,7 +222,6 @@
             <div onclick="window.app.showView('home')" class="nav-link active" id="link-home">
                 <i class="fa-solid fa-house w-5 text-center"></i> <span>Dashboard</span>
             </div>
-            <!-- NEW FEATURE LINK -->
             <div onclick="window.app.showView('focus')" class="nav-link" id="link-focus">
                 <i class="fa-solid fa-stopwatch w-5 text-center"></i> <span>Focus Zone</span>
             </div>
@@ -249,7 +249,6 @@
             </div>
             
             <div class="mt-6 text-xs font-bold text-slate-400 uppercase px-4 py-2 mb-1">Connect</div>
-            <!-- TEAM CHAT LINK -->
             <div onclick="window.app.showView('chat')" class="nav-link" id="link-chat">
                 <i class="fa-solid fa-comments w-5 text-center"></i> <span>Team Chat</span>
             </div>
@@ -275,12 +274,50 @@
         
         <div id="notification-area" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-        <!-- VIEW: HOME (Dashboard) - IFRAME -->
-        <div id="view-home" class="fade-in h-full w-full">
-            <iframe src="student-home.html" class="w-full h-full border-0"></iframe>
+        <!-- VIEW: HOME (Dashboard) -->
+        <div id="view-home" class="fade-in native-view-container h-full">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">Welcome Back</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Simple Dashboard Cards to prevent empty state -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-blue-100 text-blue-600 rounded-lg"><i class="fa-solid fa-clock"></i></div>
+                        <div>
+                            <p class="text-sm text-slate-500">Focus Time</p>
+                            <h3 class="text-xl font-bold text-slate-800">0h 0m</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-green-100 text-green-600 rounded-lg"><i class="fa-solid fa-check-circle"></i></div>
+                        <div>
+                            <p class="text-sm text-slate-500">Tasks Done</p>
+                            <h3 class="text-xl font-bold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-purple-100 text-purple-600 rounded-lg"><i class="fa-solid fa-star"></i></div>
+                        <div>
+                            <p class="text-sm text-slate-500">Streak</p>
+                            <h3 class="text-xl font-bold text-slate-800">1 Day</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 bg-blue-600 text-white rounded-xl p-8 flex items-center justify-between">
+                <div>
+                    <h3 class="text-2xl font-bold mb-2">Start your learning journey</h3>
+                    <p class="text-blue-100">Access live courses and assignments directly from the sidebar.</p>
+                </div>
+                <button onclick="window.app.showView('courses')" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-bold shadow-lg">Browse Courses</button>
+            </div>
         </div>
 
-        <!-- VIEW: FOCUS ZONE (Native) -->
+        <!-- VIEW: FOCUS ZONE -->
         <div id="view-focus" class="hidden fade-in native-view-container space-y-6">
             <h2 class="text-2xl font-bold text-slate-800">Focus Zone</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -318,7 +355,7 @@
             </div>
         </div>
 
-        <!-- VIEW: NOTES (Native) -->
+        <!-- VIEW: NOTES -->
         <div id="view-notes" class="hidden fade-in native-view-container space-y-6">
             <div class="flex justify-between items-center">
                 <div>
@@ -354,7 +391,7 @@
             </div>
         </div>
 
-        <!-- VIEW: LIBRARY (Native) -->
+        <!-- VIEW: LIBRARY -->
         <div id="view-library" class="hidden fade-in native-view-container space-y-6">
             <div class="flex justify-between items-center">
                 <div>
@@ -385,7 +422,7 @@
             </div>
         </div>
 
-        <!-- VIEW: COURSES (Native) -->
+        <!-- VIEW: COURSES -->
         <div id="view-courses" class="hidden fade-in native-view-container space-y-6">
             <h2 class="text-2xl font-bold text-slate-800">Live Classroom</h2>
             
@@ -453,7 +490,7 @@
             </div>
         </div>
 
-        <!-- VIEW: TEAM CHAT (Native - New Feature) -->
+        <!-- VIEW: TEAM CHAT -->
         <div id="view-chat" class="hidden fade-in native-view-container h-full flex flex-col">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold text-slate-800">Team Chat</h2>
@@ -470,17 +507,22 @@
             </div>
         </div>
 
-        <!-- VIEW: PROFILE (IFRAME) -->
-        <div id="view-profile" class="hidden fade-in h-full w-full">
-             <iframe src="profile.html" class="w-full h-full border-0"></iframe>
+        <!-- VIEW: PROFILE (INTEGRATED) -->
+        <div id="view-profile" class="hidden fade-in native-view-container">
+            <div id="profile-content">
+                <div class="text-center py-20 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-3xl"></i><br>Loading Profile...</div>
+            </div>
         </div>
 
-        <!-- VIEW: MY TASKS (IFRAME) -->
-        <div id="view-task" class="hidden fade-in h-full w-full">
-            <iframe src="task.html" class="w-full h-full border-0"></iframe>
+        <!-- VIEW: MY TASKS (Replaced iframe with Native View) -->
+        <div id="view-task" class="hidden fade-in native-view-container">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">My Personal Tasks</h2>
+            <div id="my-task-list-container" class="space-y-4">
+                <div class="text-center text-slate-400 py-12">Loading personal tasks...</div>
+            </div>
         </div>
 
-        <!-- VIEW: ASSIGNMENTS (Native) -->
+        <!-- VIEW: ASSIGNMENTS -->
         <div id="view-assignments" class="hidden fade-in native-view-container">
             <div class="flex justify-between items-center mb-6">
                 <div>
@@ -530,7 +572,7 @@
             </div>
         </div>
 
-        <!-- VIEW: REPORTS (Native) -->
+        <!-- VIEW: REPORTS -->
         <div id="view-report" class="hidden fade-in native-view-container space-y-6">
             <h2 class="text-2xl font-bold text-slate-800">My Live Analytics</h2>
             
@@ -550,7 +592,7 @@
             </div>
         </div>
 
-        <!-- VIEW: FEEDBACK (Native) -->
+        <!-- VIEW: FEEDBACK -->
         <div id="view-feedback" class="hidden fade-in native-view-container">
              <div class="max-w-3xl mx-auto">
                  <div class="text-center mb-8">
@@ -586,9 +628,9 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // --- CUSTOM CONFIG PROVIDED BY USER ---
         const firebaseConfig = {
@@ -623,6 +665,27 @@
         let timerInterval = null;
         let timeLeft = 25 * 60;
 
+        // Profile State
+        let currentProfile = null;
+        let isProfileEditing = false;
+        let isProfileSaving = false;
+        const defaultProfile = {
+            displayName: "New User",
+            title: "Member",
+            course: "General",
+            location: "Unknown",
+            bio: "I am using Cortex Workspace.",
+            avatarUrl: "",
+            coverUrl: "https://images.unsplash.com/photo-1557683316-973673baf926?w=1500",
+            website: "",
+            github: "",
+            linkedin: "",
+            experience: [],
+            projects: [],
+            certificates: [],
+            skills: ["Communication", "Teamwork"]
+        };
+
         // --- UTILS ---
         const fileToBase64 = (file) => new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -631,14 +694,16 @@
             reader.onerror = error => reject(error);
         });
 
+        const escapeHtml = (str) => {
+            return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]) : '';
+        };
+
         // --- APP CONTROLLER ---
         window.app = {
             init() {
-                // Ensure everything is hidden initially until auth
                 const viewHome = document.getElementById('view-home');
                 if (viewHome) viewHome.classList.add('hidden');
                 
-                // Initialize Auth Listener inside Init to ensure DOM is ready
                 if (auth) {
                     this.setupAuthListener();
                 }
@@ -653,10 +718,9 @@
                     if (user) {
                         // User is signed in.
                         currentUser = user;
-                        currentUsername = user.email.split('@')[0]; // Simple display name from email
+                        currentUsername = user.email.split('@')[0];
                         
-                        // Update UI elements safely
-                        document.querySelectorAll('.user-name-display').forEach(el => el.textContent = currentUsername);
+                        // Update UI elements
                         const navUserName = document.getElementById('nav-user-name');
                         if (navUserName) navUserName.textContent = currentUsername;
                         
@@ -669,20 +733,19 @@
                         if (userProfile) userProfile.classList.remove('hidden');
                         isUILoggedIn = true;
                         
-                        // START DATA SYNC
+                        // START DATA SYNCS
                         window.app.startDataSync();
+                        window.app.initProfile(user.email); // Init Profile Data using Email
                         
-                        // Redirect to home if first load
                         const viewHome = document.getElementById('view-home');
                         if(viewHome && viewHome.classList.contains('hidden')) {
                             window.app.showView('home');
                         }
                         window.app.showNotification(`Welcome, ${currentUsername}`, 'success');
                     } else {
-                        // User is signed out.
                         currentUser = null;
                         isUILoggedIn = false;
-                        if (loginModal) loginModal.classList.remove('hidden'); // LOCK SCREEN
+                        if (loginModal) loginModal.classList.remove('hidden');
                         if (guestActions) guestActions.classList.remove('hidden');
                         if (userProfile) userProfile.classList.add('hidden');
                     }
@@ -697,7 +760,6 @@
             showView(viewId) {
                 if (!isUILoggedIn) {
                     this.showNotification("Please login first", "error");
-                    this.toggleLoginModal(true);
                     return;
                 }
 
@@ -705,7 +767,6 @@
                 const activeLink = document.getElementById(`link-${viewId}`);
                 if(activeLink) activeLink.classList.add('active');
 
-                // Hide all views
                 ['home', 'task', 'assignments', 'report', 'feedback', 'profile', 'courses', 'chat', 'notes', 'library', 'focus'].forEach(id => {
                     const el = document.getElementById(`view-${id}`);
                     if(el) el.classList.add('hidden');
@@ -715,27 +776,21 @@
                 if (target) {
                     target.classList.remove('hidden');
                     
-                    // Only apply fade-in to non-iframe views
-                    if (!['home', 'task', 'profile'].includes(viewId)) {
+                    if (!['home', 'task'].includes(viewId)) { // Profile is native now, so fade it in
                         target.classList.remove('fade-in');
                         void target.offsetWidth;
                         target.classList.add('fade-in');
                     }
                     
                     if (viewId === 'report') setTimeout(() => this.renderCharts(), 100);
-                    // Scroll chat to bottom if chat view
                     if (viewId === 'chat') {
                         const c = document.getElementById('team-chat-messages');
                         if(c) c.scrollTop = c.scrollHeight;
                     }
+                    if (viewId === 'profile') {
+                        this.renderProfile();
+                    }
                 }
-            },
-
-            toggleLoginModal(show) {
-                const modal = document.getElementById('login-modal');
-                if(!modal) return;
-                if(show) modal.classList.remove('hidden');
-                else modal.classList.add('hidden');
             },
 
             async handleLogin(e) {
@@ -752,22 +807,18 @@
                 }
 
                 try {
-                    // Try to Sign In
                     await signInWithEmailAndPassword(auth, email, password);
-                    // Success is handled by onAuthStateChanged
                 } catch (error) {
                     if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                        // User doesn't exist, try to Create Account
                         try {
                             if(btn) btn.textContent = "Creating Account...";
                             const cred = await createUserWithEmailAndPassword(auth, email, password);
-                            // Create initial profile doc
+                            // Initial metadata
                             await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'metadata'), {
                                 username: email.split('@')[0],
                                 email: email,
                                 joinedAt: new Date().toISOString()
                             });
-                            // Success will trigger onAuthStateChanged
                         } catch (createError) {
                             console.error(createError);
                             if(errorDiv) {
@@ -801,9 +852,7 @@
             },
 
             startDataSync() {
-                const permissionError = (error) => {
-                    console.error("Firestore Sync Error:", error);
-                };
+                const permissionError = (error) => console.error("Firestore Sync Error:", error);
 
                 // Tasks
                 const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
@@ -827,8 +876,8 @@
                 onSnapshot(chatRef, (snapshot) => {
                     allChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     allChats.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                    this.renderChatStream(); // For class chat (legacy)
-                    this.renderTeamChat(); // For new team chat
+                    this.renderChatStream(); 
+                    this.renderTeamChat(); 
                 }, permissionError);
 
                 // Private Notes
@@ -850,19 +899,258 @@
                 }, permissionError);
             },
 
+            // --- PROFILE LOGIC (New Integration) ---
+            initProfile(email) {
+                // Use sanitized email as key
+                const safeDocId = email.replace(/[^a-zA-Z0-9]/g, '_');
+                const docRef = doc(db, 'artifacts', appId, 'users', safeDocId, 'profile', 'data');
+                
+                onSnapshot(docRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        // Load existing
+                        currentProfile = { ...defaultProfile, ...snapshot.data() };
+                        isProfileEditing = false;
+                    } else {
+                        // Create new
+                        currentProfile = { ...defaultProfile, email: email };
+                        isProfileEditing = true;
+                    }
+                    if(document.getElementById('view-profile') && !document.getElementById('view-profile').classList.contains('hidden')) {
+                        this.renderProfile();
+                    }
+                });
+            },
+
+            async saveProfile() {
+                if (!currentUser) return;
+                isProfileSaving = true;
+                this.renderProfile();
+
+                try {
+                    const safeDocId = currentUser.email.replace(/[^a-zA-Z0-9]/g, '_');
+                    const docRef = doc(db, 'artifacts', appId, 'users', safeDocId, 'profile', 'data');
+                    const dataToSave = JSON.parse(JSON.stringify(currentProfile));
+                    await setDoc(docRef, { ...dataToSave, lastUpdated: serverTimestamp() }, { merge: true });
+                    isProfileEditing = false;
+                    this.showNotification("Profile Saved", "success");
+                } catch(err) {
+                    console.error(err);
+                    this.showNotification("Save Failed", "error");
+                } finally {
+                    isProfileSaving = false;
+                    this.renderProfile();
+                }
+            },
+
+            toggleProfileEdit() {
+                isProfileEditing = !isProfileEditing;
+                this.renderProfile();
+            },
+
+            updateProfileField(field, value) { currentProfile[field] = value; },
+            updateProfileSkills(val) { currentProfile.skills = val.split(',').map(s => s.trim()); },
+            
+            // Profile Array Helpers
+            addProfItem(arrName, item) {
+                currentProfile[arrName].push({ id: Date.now(), ...item });
+                this.renderProfile();
+            },
+            removeProfItem(arrName, id) {
+                currentProfile[arrName] = currentProfile[arrName].filter(x => x.id !== id);
+                this.renderProfile();
+            },
+            updateProfItem(arrName, id, field, val) {
+                currentProfile[arrName] = currentProfile[arrName].map(x => x.id === id ? {...x, [field]: val} : x);
+            },
+
+            renderProfile() {
+                const container = document.getElementById('view-profile');
+                if (!container || !currentProfile) return;
+
+                // --- HTML Generators for Profile ---
+                const expHTML = currentProfile.experience.map(exp => `
+                    <div class="relative pl-6 border-l-2 border-slate-200 mb-4 group">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-4 border-white bg-blue-500"></div>
+                        ${isProfileEditing ? `
+                            <div class="grid gap-2 bg-slate-50 p-3 rounded border">
+                                <input value="${exp.role}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'role', this.value)" class="border p-1 rounded text-sm font-bold" placeholder="Role">
+                                <input value="${exp.company}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'company', this.value)" class="border p-1 rounded text-sm" placeholder="Company">
+                                <input value="${exp.year}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'year', this.value)" class="border p-1 rounded text-xs" placeholder="Year">
+                                <button onclick="window.app.removeProfItem('experience', ${exp.id})" class="text-red-500 text-xs text-right hover:underline">Remove</button>
+                            </div>
+                        ` : `
+                            <div>
+                                <h4 class="font-bold text-slate-800">${exp.role}</h4>
+                                <div class="text-sm text-slate-600">${exp.company} <span class="text-xs bg-slate-100 px-2 rounded ml-2">${exp.year}</span></div>
+                            </div>
+                        `}
+                    </div>
+                `).join('');
+
+                const certHTML = currentProfile.certificates.map(c => `
+                    <div class="flex items-center gap-3 bg-white border p-3 rounded-lg mb-2">
+                        <i class="fa-solid fa-award text-yellow-500 text-xl"></i>
+                        ${isProfileEditing ? `
+                            <div class="flex-1 grid gap-1">
+                                <input value="${c.name}" oninput="window.app.updateProfItem('certificates', ${c.id}, 'name', this.value)" class="border p-1 rounded text-sm font-bold" placeholder="Name">
+                                <input value="${c.issuer}" oninput="window.app.updateProfItem('certificates', ${c.id}, 'issuer', this.value)" class="border p-1 rounded text-xs" placeholder="Issuer">
+                                <button onclick="window.app.removeProfItem('certificates', ${c.id})" class="text-red-500 text-xs text-left">Delete</button>
+                            </div>
+                        ` : `
+                            <div>
+                                <div class="font-bold text-sm text-slate-800">${c.name}</div>
+                                <div class="text-xs text-slate-500">${c.issuer} • ${c.year}</div>
+                            </div>
+                        `}
+                    </div>
+                `).join('');
+
+                const projHTML = currentProfile.projects.map(p => `
+                    <div class="bg-white border rounded-lg p-4 mb-3 hover:shadow-sm transition-shadow">
+                        ${isProfileEditing ? `
+                            <div class="grid gap-2">
+                                <input value="${p.title}" oninput="window.app.updateProfItem('projects', ${p.id}, 'title', this.value)" class="border p-1 rounded font-bold" placeholder="Title">
+                                <textarea oninput="window.app.updateProfItem('projects', ${p.id}, 'desc', this.value)" class="border p-1 rounded text-sm" rows="2">${p.desc}</textarea>
+                                <input value="${p.link}" oninput="window.app.updateProfItem('projects', ${p.id}, 'link', this.value)" class="border p-1 rounded text-xs text-blue-500" placeholder="Link URL">
+                                <button onclick="window.app.removeProfItem('projects', ${p.id})" class="text-red-500 text-xs text-right">Remove Project</button>
+                            </div>
+                        ` : `
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="font-bold text-slate-800">${p.title}</div>
+                                    <div class="text-sm text-slate-600 mt-1">${p.desc}</div>
+                                </div>
+                                ${p.link ? `<a href="${p.link}" target="_blank" class="text-blue-500 hover:text-blue-700"><i class="fa-solid fa-external-link-alt"></i></a>` : ''}
+                            </div>
+                        `}
+                    </div>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="max-w-5xl mx-auto pb-20">
+                        <!-- Cover -->
+                        <div class="h-48 bg-slate-800 rounded-t-2xl relative overflow-hidden group">
+                            <img src="${currentProfile.coverUrl}" class="w-full h-full object-cover opacity-80">
+                            ${isProfileEditing ? `<input value="${currentProfile.coverUrl}" oninput="window.app.updateProfileField('coverUrl', this.value)" class="absolute top-4 right-4 bg-black/50 text-white text-xs p-2 rounded border-none backdrop-blur-md w-64 placeholder-gray-300" placeholder="Cover Image URL">` : ''}
+                        </div>
+                        
+                        <div class="bg-white rounded-b-2xl shadow-sm border-x border-b border-slate-200 p-6 md:p-8 relative">
+                            <div class="flex flex-col md:flex-row gap-6">
+                                <!-- Avatar -->
+                                <div class="-mt-20 shrink-0 relative">
+                                    <img src="${currentProfile.avatarUrl || 'https://ui-avatars.com/api/?name=User&background=cbd5e1'}" class="w-32 h-32 rounded-full border-4 border-white shadow-md object-cover bg-white">
+                                    ${isProfileEditing ? `<div class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg text-xs cursor-help" title="Paste URL in Edit Mode"><i class="fa-solid fa-camera"></i></div>` : ''}
+                                </div>
+                                
+                                <!-- Header Info -->
+                                <div class="flex-1 pt-2">
+                                    <div class="flex justify-between items-start">
+                                        <div class="w-full mr-4">
+                                            ${isProfileEditing ? `
+                                                <input value="${currentProfile.displayName}" oninput="window.app.updateProfileField('displayName', this.value)" class="text-2xl font-bold text-slate-900 w-full border-b border-blue-200 outline-none mb-1" placeholder="Name">
+                                                <input value="${currentProfile.title}" oninput="window.app.updateProfileField('title', this.value)" class="text-slate-600 w-full border-b border-slate-200 outline-none mb-2" placeholder="Title">
+                                                <input value="${currentProfile.avatarUrl}" oninput="window.app.updateProfileField('avatarUrl', this.value)" class="text-xs text-slate-400 w-full bg-slate-50 p-1 rounded" placeholder="Avatar URL">
+                                            ` : `
+                                                <h1 class="text-3xl font-bold text-slate-900">${currentProfile.displayName}</h1>
+                                                <p class="text-slate-600">${currentProfile.title}</p>
+                                            `}
+                                        </div>
+                                        <button onclick="${isProfileEditing ? 'window.app.saveProfile()' : 'window.app.toggleProfileEdit()'}" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-slate-700 transition-all text-sm whitespace-nowrap">
+                                            ${isProfileSaving ? '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving' : (isProfileEditing ? '<i class="fa-solid fa-save"></i> Save' : '<i class="fa-solid fa-pen"></i> Edit')}
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Meta -->
+                                    <div class="flex flex-wrap gap-3 mt-4 text-sm text-slate-600">
+                                        ${isProfileEditing ? `
+                                            <input value="${currentProfile.course}" oninput="window.app.updateProfileField('course', this.value)" class="bg-slate-50 border rounded px-2 py-1" placeholder="Course">
+                                            <input value="${currentProfile.location}" oninput="window.app.updateProfileField('location', this.value)" class="bg-slate-50 border rounded px-2 py-1" placeholder="Location">
+                                        ` : `
+                                            <span class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-100"><i class="fa-solid fa-graduation-cap text-blue-500"></i> ${currentProfile.course}</span>
+                                            <span class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-100"><i class="fa-solid fa-map-marker-alt text-blue-500"></i> ${currentProfile.location}</span>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-8 border-slate-100">
+
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <!-- Left Column -->
+                                <div class="space-y-8">
+                                    <section>
+                                        <h3 class="font-bold text-slate-800 uppercase text-xs tracking-wider mb-3">About</h3>
+                                        ${isProfileEditing ? `<textarea oninput="window.app.updateProfileField('bio', this.value)" class="w-full border rounded p-2 text-sm h-32">${currentProfile.bio}</textarea>` : `<p class="text-slate-600 text-sm leading-relaxed">${currentProfile.bio}</p>`}
+                                    </section>
+                                    
+                                    <section>
+                                        <h3 class="font-bold text-slate-800 uppercase text-xs tracking-wider mb-3">Connect</h3>
+                                        <div class="space-y-2">
+                                            ${['website', 'github', 'linkedin'].map(p => `
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-8 h-8 bg-slate-50 rounded flex items-center justify-center text-slate-400 border"><i class="fa-brands fa-${p === 'website' ? 'chrome' : p}"></i></div>
+                                                    ${isProfileEditing ? 
+                                                        `<input value="${currentProfile[p]}" oninput="window.app.updateProfileField('${p}', this.value)" class="flex-1 border rounded px-2 py-1 text-xs" placeholder="${p} URL">` : 
+                                                        (currentProfile[p] ? `<a href="${currentProfile[p]}" target="_blank" class="text-sm text-blue-600 hover:underline truncate w-40">${p}</a>` : `<span class="text-xs text-slate-400 italic">Not added</span>`)
+                                                    }
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </section>
+
+                                    <section>
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h3 class="font-bold text-slate-800 uppercase text-xs tracking-wider">Certifications</h3>
+                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('certificates', {name:'Cert Name', issuer:'Issuer', year:'2024'})" class="text-blue-500 text-xs"><i class="fa-solid fa-plus"></i></button>` : ''}
+                                        </div>
+                                        ${certHTML || '<div class="text-xs text-slate-400 italic">No certifications.</div>'}
+                                    </section>
+                                </div>
+
+                                <!-- Right Column -->
+                                <div class="lg:col-span-2 space-y-8">
+                                    <section>
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-briefcase text-blue-500 mr-2"></i> Experience</h3>
+                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('experience', {role:'Role', company:'Company', year:'2024'})" class="bg-blue-50 text-blue-600 px-3 py-1 rounded text-xs font-bold hover:bg-blue-100">Add Role</button>` : ''}
+                                        </div>
+                                        <div>${expHTML || '<div class="p-6 border-2 border-dashed border-slate-100 rounded-xl text-center text-slate-400">No experience listed.</div>'}</div>
+                                    </section>
+
+                                    <section>
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-layer-group text-blue-500 mr-2"></i> Projects</h3>
+                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('projects', {title:'Project Title', desc:'Description', link:''})" class="bg-blue-50 text-blue-600 px-3 py-1 rounded text-xs font-bold hover:bg-blue-100">Add Project</button>` : ''}
+                                        </div>
+                                        <div>${projHTML || '<div class="p-6 border-2 border-dashed border-slate-100 rounded-xl text-center text-slate-400">No projects showcase.</div>'}</div>
+                                    </section>
+
+                                    <section>
+                                        <h3 class="font-bold text-slate-800 uppercase text-xs tracking-wider mb-3">Skills</h3>
+                                        ${isProfileEditing ? 
+                                            `<textarea oninput="window.app.updateProfileSkills(this.value)" class="w-full border rounded p-2 text-sm">${currentProfile.skills.join(', ')}</textarea><p class="text-xs text-slate-400 mt-1">Comma separated</p>` : 
+                                            `<div class="flex flex-wrap gap-2">${currentProfile.skills.map(s => `<span class="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium border border-slate-200">${s}</span>`).join('')}</div>`
+                                        }
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
             // --- CHAT RENDERERS ---
             renderTeamChat() {
                 const container = document.getElementById('team-chat-messages');
                 if(!container) return;
                 
-                // Sort by oldest first for chat flow
                 const sortedChats = [...allChats].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 
                 container.innerHTML = sortedChats.map(c => `
                     <div class="flex flex-col ${c.user === currentUsername ? 'items-end' : 'items-start'}">
                         <div class="bg-white border ${c.user === currentUsername ? 'bg-blue-50 border-blue-200' : 'border-slate-200'} px-4 py-2 rounded-lg shadow-sm max-w-md">
-                            <div class="text-xs font-bold ${c.user === currentUsername ? 'text-blue-600' : 'text-slate-600'} mb-1">${this.escapeHtml(c.user)}</div>
-                            <div class="text-sm text-slate-700">${this.escapeHtml(c.message)}</div>
+                            <div class="text-xs font-bold ${c.user === currentUsername ? 'text-blue-600' : 'text-slate-600'} mb-1">${escapeHtml(c.user)}</div>
+                            <div class="text-sm text-slate-700">${escapeHtml(c.message)}</div>
                         </div>
                         <div class="text-[10px] text-slate-400 mt-1 mb-2">${new Date(c.timestamp).toLocaleTimeString()}</div>
                     </div>
@@ -870,16 +1158,14 @@
                 container.scrollTop = container.scrollHeight;
             },
             
-            // Legacy/Class Chat renderer
             renderChatStream() {
                 const container = document.getElementById('class-chat-stream');
                 if(container) {
-                     // Sort oldest first
                     const sortedChats = [...allChats].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                     container.innerHTML = sortedChats.slice(-20).map(c => `
                         <div class="text-sm">
-                            <span class="font-bold text-slate-700">${this.escapeHtml(c.user)}:</span>
-                            <span class="text-slate-600">${this.escapeHtml(c.message)}</span>
+                            <span class="font-bold text-slate-700">${escapeHtml(c.user)}:</span>
+                            <span class="text-slate-600">${escapeHtml(c.message)}</span>
                         </div>
                     `).join('');
                     container.scrollTop = container.scrollHeight;
@@ -891,7 +1177,6 @@
                 const filterInput = document.getElementById('filter-input');
                 const filter = filterInput ? filterInput.value.toLowerCase() : '';
                 
-                // Safely handle filtering
                 const myTasks = allTasks.filter(t => t.assignee && t.assignee.toLowerCase().includes(currentUsername.toLowerCase()));
                 const myContainer = document.getElementById('my-task-list-container');
                 if(myContainer) myContainer.innerHTML = myTasks.length ? myTasks.map(t => this.createTaskCard(t, true)).join('') : `<div class="p-8 text-center text-slate-400">No tasks assigned to you.</div>`;
@@ -971,7 +1256,7 @@
                             <button onclick="window.app.deleteNote('${note.id}')" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <i class="fa-solid fa-times"></i>
                             </button>
-                            <p class="text-slate-800 font-medium">${this.escapeHtml(note.content)}</p>
+                            <p class="text-slate-800 font-medium">${escapeHtml(note.content)}</p>
                             ${mediaHtml}
                             <div class="mt-4 text-xs text-slate-400 flex justify-between items-end border-t pt-2 border-slate-50">
                                 <span>${new Date(note.timestamp).toLocaleDateString()}</span>
@@ -1005,15 +1290,15 @@
                                 <i class="fa-solid ${icons[res.type] || 'fa-link'}"></i>
                             </div>
                             <div>
-                                <h4 class="font-bold text-slate-800 text-sm">${this.escapeHtml(res.title)}</h4>
+                                <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(res.title)}</h4>
                                 <div class="flex gap-2 text-xs text-slate-400 mt-0.5">
                                     <span class="capitalize">${res.type}</span>
                                     <span>•</span>
-                                    <span>Shared by ${this.escapeHtml(res.sharedBy)}</span>
+                                    <span>Shared by ${escapeHtml(res.sharedBy)}</span>
                                 </div>
                             </div>
                         </div>
-                        <a href="${this.escapeHtml(res.url)}" target="_blank" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                        <a href="${escapeHtml(res.url)}" target="_blank" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors">
                             <i class="fa-solid fa-external-link-alt"></i>
                         </a>
                     </div>
@@ -1030,11 +1315,11 @@
                 container.innerHTML = allFeedbacks.map(fb => `
                     <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm fade-in">
                         <div class="flex justify-between mb-2">
-                            <span class="font-bold text-slate-700 text-sm">${this.escapeHtml(fb.name)}</span>
+                            <span class="font-bold text-slate-700 text-sm">${escapeHtml(fb.name)}</span>
                             <span class="text-xs text-slate-400">${new Date(fb.timestamp).toLocaleDateString()}</span>
                         </div>
-                        <div class="text-xs font-semibold text-blue-500 mb-1 uppercase">${this.escapeHtml(fb.category)}</div>
-                        <p class="text-slate-600 text-sm">${this.escapeHtml(fb.message)}</p>
+                        <div class="text-xs font-semibold text-blue-500 mb-1 uppercase">${escapeHtml(fb.category)}</div>
+                        <p class="text-slate-600 text-sm">${escapeHtml(fb.message)}</p>
                     </div>
                 `).join('');
             },
@@ -1050,12 +1335,12 @@
                     </button>
                     <div class="flex-grow">
                         <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-slate-800 ${task.status === 'completed' ? 'line-through text-slate-400' : ''}">${this.escapeHtml(task.title)}</h4>
+                            <h4 class="font-bold text-slate-800 ${task.status === 'completed' ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">${task.status}</span>
                         </div>
-                        <p class="text-sm text-slate-600 mt-1 line-clamp-2">${this.escapeHtml(task.description)}</p>
+                        <p class="text-sm text-slate-600 mt-1 line-clamp-2">${escapeHtml(task.description)}</p>
                         <div class="flex items-center gap-4 mt-3 text-xs text-slate-400">
-                            <span><i class="fa-solid fa-user mr-1"></i> ${this.escapeHtml(task.assignee)}</span>
+                            <span><i class="fa-solid fa-user mr-1"></i> ${escapeHtml(task.assignee)}</span>
                             <span><i class="fa-solid fa-calendar mr-1"></i> ${task.dueDate}</span>
                         </div>
                     </div>
@@ -1273,9 +1558,6 @@
                 area.appendChild(el);
                 requestAnimationFrame(() => el.classList.remove('translate-y-10', 'opacity-0'));
                 setTimeout(() => { el.classList.add('translate-y-4', 'opacity-0'); setTimeout(() => el.remove(), 300); }, 3000);
-            },
-            escapeHtml(str) {
-                return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]) : '';
             }
         };
 
