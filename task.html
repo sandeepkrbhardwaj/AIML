@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskAssigner - Team View</title>
+    
+    <!-- Optimize Connections -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Iframe Optimization: Ensure height and no horizontal scroll */
+        html, body { 
+            font-family: 'Inter', sans-serif; 
+            overflow-x: hidden;
+            height: 100%;
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Skeleton Animation */
+        .skeleton {
+            background: #e2e8f0;
+            background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 0.5rem;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-10 px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between shadow-sm flex-none">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 p-2 rounded-lg text-white">
+                <i data-lucide="clipboard-list" width="20" height="20"></i>
+            </div>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent truncate">
+                TaskAssigner <span class="hidden xs:inline text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full ml-2 align-middle">Team View</span>
+            </h1>
+        </div>
+        <div class="flex items-center gap-4 text-sm text-slate-500">
+            <span class="hidden md:inline">
+                Logged in as <span id="user-display" class="font-mono text-xs bg-slate-100 px-2 py-1 rounded">...</span>
+            </span>
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                <i data-lucide="user" width="16" height="16" class="text-slate-600"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 flex-grow w-full">
+        
+        <!-- Creation Card -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <i data-lucide="plus" class="w-5 h-5 text-blue-500"></i>
+                New Team Assignment
+            </h2>
+            <form id="add-task-form" class="flex flex-col xl:flex-row gap-4">
+                <!-- Task Description -->
+                <div class="flex-[2] space-y-1">
+                    <label for="taskName" class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Task</label>
+                    <input
+                        id="taskName"
+                        type="text"
+                        placeholder="What needs to be done?"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+                        required
+                    />
+                </div>
+                
+                <!-- Assigned To -->
+                <div class="flex-1 space-y-1">
+                    <label for="assigneeName" class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Assigned To</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                        <input
+                            id="assigneeName"
+                            type="text"
+                            placeholder="Receiver's Name"
+                            class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <!-- Assigned By -->
+                <div class="flex-1 space-y-1">
+                    <label for="creatorName" class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Assigned By</label>
+                    <div class="relative">
+                        <i data-lucide="user-plus" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                        <input
+                            id="creatorName"
+                            type="text"
+                            placeholder="Your Name"
+                            class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div class="flex items-end">
+                    <button
+                        type="submit"
+                        id="submit-btn"
+                        disabled
+                        class="w-full xl:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                        <span>Loading...</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Filters & Stats -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm w-fit overflow-x-auto max-w-full">
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-slate-100 text-slate-900 whitespace-nowrap">
+                    All Tasks
+                </button>
+                <button onclick="setFilter('pending')" id="filter-pending" class="filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-slate-700 whitespace-nowrap">
+                    Pending
+                </button>
+                <button onclick="setFilter('completed')" id="filter-completed" class="filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-slate-700 whitespace-nowrap">
+                    Done
+                </button>
+            </div>
+            
+            <div id="stats-display" class="text-sm text-slate-500 font-medium whitespace-nowrap">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Task Grid (Initially showing Skeletons) -->
+        <div id="task-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8">
+            <!-- Skeleton Items (Displayed while loading) -->
+            <div class="skeleton-item bg-white rounded-2xl p-5 border border-slate-200 shadow-sm h-48 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between mb-4"><div class="skeleton w-20 h-6"></div><div class="skeleton w-6 h-6 rounded"></div></div>
+                    <div class="skeleton w-3/4 h-6 mb-2"></div>
+                    <div class="skeleton w-1/2 h-4 mb-6"></div>
+                </div>
+                <div class="skeleton w-full h-10 rounded-xl"></div>
+            </div>
+            <div class="skeleton-item bg-white rounded-2xl p-5 border border-slate-200 shadow-sm h-48 flex flex-col justify-between hidden md:flex">
+                <div>
+                    <div class="flex justify-between mb-4"><div class="skeleton w-20 h-6"></div><div class="skeleton w-6 h-6 rounded"></div></div>
+                    <div class="skeleton w-3/4 h-6 mb-2"></div>
+                    <div class="skeleton w-1/2 h-4 mb-6"></div>
+                </div>
+                <div class="skeleton w-full h-10 rounded-xl"></div>
+            </div>
+            <div class="skeleton-item bg-white rounded-2xl p-5 border border-slate-200 shadow-sm h-48 flex flex-col justify-between hidden lg:flex">
+                <div>
+                    <div class="flex justify-between mb-4"><div class="skeleton w-20 h-6"></div><div class="skeleton w-6 h-6 rounded"></div></div>
+                    <div class="skeleton w-3/4 h-6 mb-2"></div>
+                    <div class="skeleton w-1/2 h-4 mb-6"></div>
+                </div>
+                <div class="skeleton w-full h-10 rounded-xl"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Logic: Using Firebase Modular SDK v12.7.0 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+        // --- 1. CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyByNguF8LnWae1tehQFT3f0TGRsRtst-lk",
+            authDomain: "aiml-59e44.firebaseapp.com",
+            projectId: "aiml-59e44",
+            storageBucket: "aiml-59e44.appspot.com",
+            messagingSenderId: "495020918333",
+            appId: "1:495020918333:web:c6ed2308e89ad15d1f0c54"
+        };
+        
+        // --- APP ID for Security Rules ---
+        // Must match the hierarchy: /artifacts/{APP_ID}/public/data/tasks
+        const APP_ID = "task-assigner-app";
+
+        // --- 2. ADMIN SETUP (FOR RESTRICTED DELETION) ---
+        // Instructions:
+        // 1. Run the app in VS Code (Live Server).
+        // 2. Open Developer Tools (F12) -> Console.
+        // 3. Look for "YOUR UID IS: ..."
+        // 4. Copy that long string and paste it inside the quotes below.
+        // 5. Only the user with this UID will see the Delete button.
+        const ADMIN_UID = "REPLACE_THIS_WITH_YOUR_UID_FROM_CONSOLE"; 
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- State ---
+        let currentUser = null;
+        let tasks = [];
+        let currentFilter = 'all';
+        let isSubmitting = false;
+        let hasLoadedOnce = false;
+
+        // --- DOM Elements ---
+        const form = document.getElementById('add-task-form');
+        const taskGrid = document.getElementById('task-grid');
+        const userDisplay = document.getElementById('user-display');
+        const statsDisplay = document.getElementById('stats-display');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // --- Authentication ---
+        async function initAuth() {
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth initialization error:", error);
+                submitBtn.innerText = "Auth Error";
+                submitBtn.classList.add('bg-red-500');
+            }
+        }
+
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                console.log("YOUR UID IS:", user.uid); // <--- COPY THIS UID FOR ADMIN SETUP
+                
+                userDisplay.textContent = user.uid.slice(0, 6) + '...';
+                // Enable button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>Assign Task</span>';
+                submitBtn.classList.remove('disabled:bg-slate-300', 'disabled:cursor-not-allowed');
+                
+                initFirestoreListeners();
+            }
+        });
+
+        // --- Firestore Real-time Listener (Backend Logic) ---
+        function initFirestoreListeners() {
+            if (!currentUser) return;
+
+            // UPDATED PATH: Matched to Firebase Rules
+            // Rule: /artifacts/{appId}/public/data/{collection}/{docId}
+            const tasksCollection = collection(db, 'artifacts', APP_ID, 'public', 'data', 'tasks');
+
+            const safetyTimeout = setTimeout(() => {
+                if (!hasLoadedOnce) {
+                    console.warn("Snapshot took too long, forcing empty state.");
+                    hasLoadedOnce = true;
+                    renderTasks(); 
+                }
+            }, 6000);
+
+            onSnapshot(tasksCollection, (snapshot) => {
+                clearTimeout(safetyTimeout); 
+                
+                const loadedTasks = snapshot.docs.map(d => ({
+                    id: d.id,
+                    ...d.data()
+                }));
+
+                // Sort: Newest first
+                loadedTasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                tasks = loadedTasks;
+                hasLoadedOnce = true;
+                renderTasks();
+            }, (error) => {
+                clearTimeout(safetyTimeout);
+
+                let errorMessage = "Connection Issue";
+                let errorDetails = "Check console for details.";
+                let icon = "wifi-off";
+                let colorClass = "rose";
+
+                // DETECT PERMISSION ERRORS
+                if (error.code === 'permission-denied' || error.message.includes("permissions") || error.message.includes("Missing or insufficient")) {
+                    console.warn("Firestore Permission Denied (Access blocked).");
+                    errorMessage = "Database Permission Denied";
+                    errorDetails = `
+                        <div class="mt-2 text-left text-xs bg-white p-3 rounded border border-rose-200">
+                            <strong>Note:</strong> Access to public tasks requires you to use the specific path defined in your security rules.<br/>
+                            Current Path: <code>/artifacts/${APP_ID}/public/data/tasks</code>
+                        </div>
+                    `;
+                    icon = "lock";
+                } else {
+                     console.error("Error listening to tasks:", error);
+                }
+
+                taskGrid.innerHTML = `
+                    <div class="col-span-full py-12 flex flex-col items-center justify-center text-${colorClass}-500 border-2 border-dashed border-${colorClass}-200 rounded-2xl bg-${colorClass}-50/50 p-6">
+                        <i data-lucide="${icon}" class="w-10 h-10 mb-3"></i>
+                        <p class="font-bold text-lg">${errorMessage}</p>
+                        <div class="text-sm mt-1">${errorDetails}</div>
+                    </div>
+                `;
+                lucide.createIcons();
+            });
+        }
+
+        // --- CRUD Operations ---
+        
+        // CREATE
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser || isSubmitting) return;
+
+            const taskName = document.getElementById('taskName').value.trim();
+            const assigneeName = document.getElementById('assigneeName').value.trim();
+            const creatorName = document.getElementById('creatorName').value.trim();
+
+            if (!taskName || !assigneeName || !creatorName) return;
+
+            isSubmitting = true;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="loader"></div>';
+
+            try {
+                // UPDATED PATH: Matched to Firebase Rules
+                const tasksCollection = collection(db, 'artifacts', APP_ID, 'public', 'data', 'tasks');
+                await addDoc(tasksCollection, {
+                    title: taskName,
+                    assignee: assigneeName,
+                    creator: creatorName,
+                    creatorUid: currentUser.uid,
+                    completed: false,
+                    createdAt: Date.now()
+                });
+                
+                document.getElementById('taskName').value = '';
+                document.getElementById('assigneeName').value = '';
+            } catch (error) {
+                console.error("Error adding task:", error);
+                
+                if (error.code === 'permission-denied' || error.message.includes("permissions")) {
+                     alert("Permission Denied: Please check your Firebase Rules or path structure.");
+                } else {
+                     alert("Failed to assign task. See console.");
+                }
+            } finally {
+                isSubmitting = false;
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>Assign Task</span>';
+            }
+        });
+
+        // Expose functions to window (Required for Modules)
+        window.toggleTaskStatus = async (taskId, currentStatus) => {
+            if (!currentUser) return;
+            try {
+                // UPDATED PATH: Matched to Firebase Rules
+                const taskRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'tasks', taskId);
+                await updateDoc(taskRef, { completed: !currentStatus });
+            } catch (error) {
+                console.error("Error toggling task:", error);
+                if (error.code === 'permission-denied') {
+                    alert("Permission Denied: Please update your Firebase Rules.");
+                }
+            }
+        };
+
+        window.deleteTask = async (taskId) => {
+            if (!currentUser) return;
+            try {
+                // UPDATED PATH: Matched to Firebase Rules
+                const taskRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'tasks', taskId);
+                await deleteDoc(taskRef);
+            } catch (error) {
+                console.error("Error deleting task:", error);
+                if (error.code === 'permission-denied') {
+                    alert("Permission Denied: Please update your Firebase Rules.");
+                }
+            }
+        };
+        
+        // Expose filter function
+        window.setFilter = (filterType) => {
+            currentFilter = filterType;
+            renderTasks();
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = 'filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-slate-700 whitespace-nowrap';
+            });
+            
+            const activeBtn = document.getElementById(`filter-${filterType}`);
+            let activeClass = '';
+            if (filterType === 'all') activeClass = 'bg-slate-100 text-slate-900';
+            if (filterType === 'pending') activeClass = 'bg-orange-50 text-orange-700';
+            if (filterType === 'completed') activeClass = 'bg-emerald-50 text-emerald-700';
+            
+            activeBtn.className = `filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeClass} whitespace-nowrap`;
+        };
+
+        // --- Rendering ---
+        function renderTasks() {
+            const filtered = tasks.filter(task => {
+                if (currentFilter === 'pending') return !task.completed;
+                if (currentFilter === 'completed') return task.completed;
+                return true;
+            });
+
+            const pendingCount = tasks.filter(t => !t.completed).length;
+            if (pendingCount === 0 && tasks.length > 0) {
+                statsDisplay.innerHTML = `<span class="text-emerald-600 flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> All caught up!</span>`;
+            } else {
+                statsDisplay.textContent = `${pendingCount} shared tasks remaining`;
+            }
+
+            if (filtered.length === 0) {
+                 if (tasks.length === 0) {
+                     taskGrid.innerHTML = `
+                        <div class="col-span-full py-12 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl bg-white/50">
+                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                <i data-lucide="layout-list" class="w-8 h-8 text-slate-300"></i>
+                            </div>
+                            <p class="font-medium">No shared tasks found</p>
+                            <p class="text-sm mt-1">Assign tasks to your team to see them here.</p>
+                        </div>
+                    `;
+                } else {
+                     taskGrid.innerHTML = `
+                        <div class="col-span-full py-12 flex flex-col items-center justify-center text-slate-400">
+                            <p class="font-medium">No tasks match this filter</p>
+                        </div>
+                    `;
+                }
+            } else {
+                taskGrid.innerHTML = filtered.map(task => {
+                    // RESTRICTED DELETE LOGIC
+                    // Only show delete button if currentUser.uid matches ADMIN_UID
+                    const showDelete = currentUser && currentUser.uid === ADMIN_UID;
+                    
+                    return `
+                    <div class="group relative bg-white rounded-2xl p-5 border transition-all duration-200 hover:shadow-md flex flex-col justify-between ${task.completed ? 'border-slate-100 opacity-75 hover:opacity-100' : 'border-slate-200 shadow-sm'}">
+                        <div>
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide ${task.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}">
+                                    ${task.completed ? 'Completed' : 'Pending'}
+                                </div>
+                                
+                                ${showDelete ? `
+                                <button onclick="deleteTask('${task.id}')" class="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded hover:bg-rose-50" title="Delete assignment">
+                                    <i data-lucide="trash-2" width="18" height="18"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+
+                            <h3 class="font-semibold text-lg leading-snug mb-3 ${task.completed ? 'text-slate-500 line-through' : 'text-slate-800'}">
+                                ${escapeHtml(task.title)}
+                            </h3>
+                            
+                            <div class="bg-slate-50 rounded-lg p-3 mb-6 space-y-2 text-sm border border-slate-100">
+                                <div class="flex items-center gap-2 text-slate-600">
+                                   <span class="text-xs font-semibold text-slate-400 uppercase w-16">To:</span>
+                                   <div class="flex items-center gap-1.5 font-medium">
+                                      <i data-lucide="user" width="14" height="14" class="text-blue-500"></i>
+                                      ${escapeHtml(task.assignee)}
+                                   </div>
+                                </div>
+                                <div class="flex items-center gap-2 text-slate-600">
+                                   <span class="text-xs font-semibold text-slate-400 uppercase w-16">By:</span>
+                                   <div class="flex items-center gap-1.5 font-medium">
+                                      <i data-lucide="user-plus" width="14" height="14" class="text-purple-500"></i>
+                                      ${escapeHtml(task.creator || 'Unknown')}
+                                   </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="toggleTaskStatus('${task.id}', ${task.completed})" class="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${task.completed ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/10'}">
+                            ${task.completed ? 
+                                `<i data-lucide="check-circle" width="16" height="16"></i> Mark as Pending` : 
+                                `<i data-lucide="circle" width="16" height="16"></i> Mark as Done`
+                            }
+                        </button>
+                    </div>
+                `}).join('');
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Helper to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

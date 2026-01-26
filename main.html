@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORTEX Workspace</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Marked -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+        
+        body { 
+            background: #f8fafc; 
+            overflow: hidden; 
+            height: 100vh;
+            color: #334155;
+        }
+
+        /* --- LAYOUT --- */
+        header {
+            background: #ffffff;
+            height: 64px;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 50;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .sidebar {
+            background: #ffffff;
+            width: 240px;
+            height: calc(100vh - 64px);
+            position: fixed;
+            top: 64px;
+            left: 0;
+            overflow-y: auto;
+            z-index: 40;
+            transition: width 0.3s ease;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .sidebar.collapsed { width: 72px; }
+
+        .main-frame {
+            margin-left: 240px;
+            margin-top: 64px;
+            height: calc(100vh - 64px);
+            overflow-y: hidden; 
+            padding: 0; 
+            transition: margin-left 0.3s ease;
+            position: relative;
+            background: #f8fafc;
+        }
+
+        .main-frame.collapsed { margin-left: 72px; }
+
+        /* Utility class for native views that need padding */
+        .native-view-container {
+            padding: 32px;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 100px;
+        }
+
+        /* --- COMPONENTS --- */
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            margin: 8px;
+            color: #64748b;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+        
+        .sidebar.collapsed .nav-link span { display: none; }
+        .sidebar.collapsed .nav-link { justify-content: center; padding: 12px; }
+
+        /* Video Classroom Styles */
+        .video-container {
+            background: #0f172a;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            height: 100%;
+        }
+        
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background: #0f172a;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: splashFadeOut 0.8s ease 2.0s forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes splashFadeOut { to { opacity: 0; } }
+
+        @media(max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 240px; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-frame { margin-left: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SPLASH -->
+    <div id="splash-screen">
+        <div class="text-center">
+            <div class="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse">
+                <i class="fa-solid fa-layer-group text-4xl text-white"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-white tracking-widest">CORTEX</h1>
+        </div>
+    </div>
+
+    <!-- LOGIN/SIGNUP MODAL (Secure Gatekeeper) -->
+    <div id="login-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl transform scale-100 transition-transform">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Cortex Access</h2>
+                    <p class="text-xs text-slate-400 font-medium uppercase tracking-wide mt-1">Authentication Required</p>
+                </div>
+            </div>
+            
+            <p class="text-slate-500 mb-6 text-sm">Please verify your identity with Firebase to access the workspace.</p>
+            
+            <form onsubmit="window.app.handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email Address</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="email" name="email" required class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="name@example.com">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="password" name="password" required class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••••••">
+                    </div>
+                </div>
+                
+                <div id="login-error" class="text-red-500 text-xs text-center hidden"></div>
+
+                <button type="submit" id="login-btn" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition-colors shadow-lg mt-2">
+                    Login / Sign Up
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-4">
+            <button id="toggleSidebar" class="text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-colors">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+            <div class="flex items-center gap-2 text-slate-800 font-bold text-xl tracking-tight">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                CORTEX
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div id="header-user-profile" class="flex items-center gap-3 cursor-pointer" onclick="window.app.showView('profile')">
+                <div class="text-right hidden sm:block">
+                    <p id="nav-user-name" class="text-slate-700 text-sm font-semibold">Guest</p>
+                    <p class="text-slate-400 text-xs">Verified</p>
+                </div>
+                <img src="https://ui-avatars.com/api/?name=Guest&background=e2e8f0&color=64748b" id="user-avatar" class="w-9 h-9 rounded-full border border-slate-200 object-cover" alt="Profile">
+            </div>
+        </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar" class="sidebar shadow-sm scrollbar-hide">
+        <div class="p-3">
+            <div class="text-xs font-bold text-slate-400 uppercase px-4 py-2 mt-2 mb-1">Workspace</div>
+            
+            <div onclick="window.app.showView('home')" class="nav-link active" id="link-home">
+                <i class="fa-solid fa-house w-5 text-center"></i> <span>Dashboard</span>
+            </div>
+            <!-- NEW FEATURE LINK -->
+            <div onclick="window.app.showView('focus')" class="nav-link" id="link-focus">
+                <i class="fa-solid fa-stopwatch w-5 text-center"></i> <span>Focus Zone</span>
+            </div>
+            <div onclick="window.app.showView('notes')" class="nav-link" id="link-notes">
+                <i class="fa-solid fa-sticky-note w-5 text-center"></i> <span>My Notes</span>
+            </div>
+            
+            <div class="mt-6 text-xs font-bold text-slate-400 uppercase px-4 py-2 mb-1">Learning</div>
+            <div onclick="window.app.showView('courses')" class="nav-link" id="link-courses">
+                <i class="fa-solid fa-video w-5 text-center"></i> <span>Live Courses</span>
+            </div>
+            <div onclick="window.app.showView('library')" class="nav-link" id="link-library">
+                <i class="fa-solid fa-book-open w-5 text-center"></i> <span>Library</span>
+            </div>
+
+            <div class="mt-6 text-xs font-bold text-slate-400 uppercase px-4 py-2 mb-1">Activity</div>
+            <div onclick="window.app.showView('task')" class="nav-link" id="link-task">
+                <i class="fa-solid fa-list-check w-5 text-center"></i> <span>My Tasks</span>
+            </div>
+            <div onclick="window.app.showView('assignments')" class="nav-link" id="link-assignments">
+                <i class="fa-solid fa-briefcase w-5 text-center"></i> <span>Assignments</span>
+            </div>
+            <div onclick="window.app.showView('report')" class="nav-link" id="link-report">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i> <span>Analytics</span>
+            </div>
+            
+            <div class="mt-6 text-xs font-bold text-slate-400 uppercase px-4 py-2 mb-1">Connect</div>
+            <!-- TEAM CHAT LINK -->
+            <div onclick="window.app.showView('chat')" class="nav-link" id="link-chat">
+                <i class="fa-solid fa-comments w-5 text-center"></i> <span>Team Chat</span>
+            </div>
+            <div onclick="window.app.showView('feedback')" class="nav-link" id="link-feedback">
+                <i class="fa-solid fa-comment-dots w-5 text-center"></i> <span>Feedback</span>
+            </div>
+
+            <div class="mt-6 text-xs font-bold text-slate-400 uppercase px-4 py-2 mb-1">User</div>
+            <div onclick="window.app.showView('profile')" class="nav-link" id="link-profile">
+                <i class="fa-solid fa-user w-5 text-center"></i> <span>Profile</span>
+            </div>
+            
+            <div class="mt-auto pt-8">
+                 <div onclick="window.app.logout()" class="nav-link text-red-500 hover:bg-red-50 hover:text-red-600">
+                    <i class="fa-solid fa-power-off w-5 text-center"></i> <span>Disconnect</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div id="main-frame" class="main-frame">
+        
+        <div id="notification-area" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+        <!-- VIEW: HOME (Dashboard) - IFRAME -->
+        <div id="view-home" class="fade-in h-full w-full">
+            <iframe src="student-home.html" class="w-full h-full border-0"></iframe>
+        </div>
+
+        <!-- VIEW: FOCUS ZONE (Native) -->
+        <div id="view-focus" class="hidden fade-in native-view-container space-y-6">
+            <h2 class="text-2xl font-bold text-slate-800">Focus Zone</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Timer Card -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center justify-center text-center">
+                    <div class="w-64 h-64 rounded-full border-8 border-blue-100 flex items-center justify-center relative mb-8">
+                        <div class="text-6xl font-mono font-bold text-slate-800" id="timer-display">25:00</div>
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="window.app.timerStart()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-bold shadow-lg transition-transform hover:scale-105"><i class="fa-solid fa-play mr-2"></i> Start</button>
+                        <button onclick="window.app.timerPause()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-3 rounded-full font-bold transition-colors"><i class="fa-solid fa-pause"></i></button>
+                        <button onclick="window.app.timerReset()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-3 rounded-full font-bold transition-colors"><i class="fa-solid fa-rotate-left"></i></button>
+                    </div>
+                    <div class="mt-6 flex gap-2">
+                        <button onclick="window.app.setTimerMode(25)" class="px-4 py-1 text-sm rounded-full bg-blue-50 text-blue-700 font-medium">Focus (25m)</button>
+                        <button onclick="window.app.setTimerMode(5)" class="px-4 py-1 text-sm rounded-full bg-green-50 text-green-700 font-medium">Break (5m)</button>
+                    </div>
+                </div>
+
+                <!-- Task Context -->
+                <div class="bg-slate-900 text-white p-8 rounded-2xl shadow-lg flex flex-col">
+                    <h3 class="font-bold text-xl mb-4">Current Session</h3>
+                    <div class="flex-grow flex items-center justify-center border-2 border-dashed border-slate-700 rounded-xl p-4 text-center text-slate-400">
+                        <p>Select a task from your list to track focus time, or just focus freely.</p>
+                    </div>
+                    <div class="mt-6">
+                        <h4 class="font-bold text-sm text-slate-400 uppercase mb-3">Ambient Sound</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button class="p-3 bg-slate-800 rounded-lg hover:bg-slate-700 text-center text-xs"><i class="fa-solid fa-cloud-rain text-xl mb-1 block"></i> Rain</button>
+                            <button class="p-3 bg-slate-800 rounded-lg hover:bg-slate-700 text-center text-xs"><i class="fa-solid fa-coffee text-xl mb-1 block"></i> Cafe</button>
+                            <button class="p-3 bg-slate-800 rounded-lg hover:bg-slate-700 text-center text-xs"><i class="fa-solid fa-wind text-xl mb-1 block"></i> Wind</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: NOTES (Native) -->
+        <div id="view-notes" class="hidden fade-in native-view-container space-y-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">My Notes</h2>
+                    <p class="text-slate-500 text-sm">Private digital notepad with file support.</p>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+                <form onsubmit="window.app.handleAddNote(event)" class="space-y-3">
+                    <input type="text" name="content" required placeholder="Note title or text content..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <select name="type" id="note-type-select" onchange="window.app.toggleNoteInputs(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="text">Text Only</option>
+                            <option value="video">Video URL (YouTube)</option>
+                            <option value="image">Image File</option>
+                            <option value="pdf">PDF File</option>
+                        </select>
+
+                        <input type="url" name="mediaUrl" id="note-url-input" placeholder="Paste YouTube Link here..." class="hidden flex-grow bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="file" name="mediaFile" id="note-file-input" accept="image/*,application/pdf" class="hidden flex-grow text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+
+                        <button type="submit" class="bg-yellow-400 text-yellow-900 font-bold px-6 py-2 rounded-lg hover:bg-yellow-500 transition-colors whitespace-nowrap">
+                            <i class="fa-solid fa-plus mr-2"></i> Save Note
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="text-center text-slate-400 col-span-full py-12">Loading notes...</div>
+            </div>
+        </div>
+
+        <!-- VIEW: LIBRARY (Native) -->
+        <div id="view-library" class="hidden fade-in native-view-container space-y-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Resource Library</h2>
+                    <p class="text-slate-500 text-sm">Shared links, videos, and study materials.</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-slate-700 mb-4">Share a Resource</h3>
+                <form onsubmit="window.app.handleAddResource(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="text" name="title" required placeholder="Resource Title" class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="url" name="url" required placeholder="https://..." class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    <select name="type" class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="article">Article/Web</option>
+                        <option value="video">Video</option>
+                        <option value="book">Book/PDF</option>
+                        <option value="file">File Download</option>
+                    </select>
+                    <button type="submit" class="bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-900 transition-colors">
+                        Share
+                    </button>
+                </form>
+            </div>
+
+            <div id="resource-list" class="space-y-4">
+                 <div class="text-center text-slate-400 py-12">Loading resources...</div>
+            </div>
+        </div>
+
+        <!-- VIEW: COURSES (Native) -->
+        <div id="view-courses" class="hidden fade-in native-view-container space-y-6">
+            <h2 class="text-2xl font-bold text-slate-800">Live Classroom</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="h-32 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center">
+                        <i class="fa-solid fa-code text-white text-4xl opacity-50"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-slate-800 mb-2">Advanced Web Dev</h3>
+                        <p class="text-slate-500 text-sm mb-4">Master modern frameworks and real-time systems.</p>
+                        <button onclick="window.app.joinLiveClass('Web Dev')" class="w-full bg-slate-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-700">Start Session</button>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="h-32 bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center">
+                        <i class="fa-solid fa-database text-white text-4xl opacity-50"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-slate-800 mb-2">Database Architecture</h3>
+                        <p class="text-slate-500 text-sm mb-4">Scalable storage solutions with Firebase.</p>
+                        <button onclick="window.app.joinLiveClass('Database')" class="w-full bg-slate-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-700">Start Session</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Room -->
+            <div id="live-room-interface" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+                    <div class="lg:col-span-2 flex flex-col gap-4">
+                        <div class="video-container flex-grow relative group shadow-lg">
+                            <video id="local-video" autoplay playsinline muted></video>
+                            <div class="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                                <i class="fa-solid fa-circle text-red-500 text-xs mr-2"></i> Live Broadcast
+                            </div>
+                            <div class="absolute inset-0 flex items-center justify-center bg-slate-900 z-10" id="camera-placeholder">
+                                <div class="text-center text-slate-400">
+                                    <i class="fa-solid fa-video-slash text-4xl mb-2"></i>
+                                    <p>Camera Off</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-4 justify-center mt-auto">
+                            <button onclick="window.app.toggleCamera()" class="p-4 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors"><i class="fa-solid fa-video"></i></button>
+                            <button onclick="window.app.toggleMic()" class="p-4 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors"><i class="fa-solid fa-microphone"></i></button>
+                            <button onclick="window.app.leaveClass()" class="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"><i class="fa-solid fa-phone-slash"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50 font-bold text-slate-700 flex justify-between items-center">
+                            <span>Class Chat</span>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Live</span>
+                        </div>
+                        <div id="class-chat-stream" class="flex-grow p-4 overflow-y-auto space-y-3 bg-slate-50/30"></div>
+                        <div class="p-3 border-t border-slate-100">
+                            <form onsubmit="window.app.sendChatMessage(event)" class="flex gap-2">
+                                <input type="text" name="message" class="flex-grow border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Type a message..." autocomplete="off">
+                                <button type="submit" class="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"><i class="fa-solid fa-paper-plane"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: TEAM CHAT (Native - New Feature) -->
+        <div id="view-chat" class="hidden fade-in native-view-container h-full flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-slate-800">Team Chat</h2>
+                <div class="text-xs text-slate-400">Connected to Firebase</div>
+            </div>
+            <div class="flex-grow bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden h-[calc(100vh-180px)]">
+                <div id="team-chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4 bg-slate-50">
+                    <div class="text-center text-slate-400 text-sm py-10">Loading messages...</div>
+                </div>
+                <form onsubmit="window.app.sendChatMessage(event)" class="p-4 bg-white border-t border-slate-200 flex gap-2">
+                    <input type="text" name="message" class="flex-grow border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-bold">Send</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VIEW: PROFILE (IFRAME) -->
+        <div id="view-profile" class="hidden fade-in h-full w-full">
+             <iframe src="profile.html" class="w-full h-full border-0"></iframe>
+        </div>
+
+        <!-- VIEW: MY TASKS (IFRAME) -->
+        <div id="view-task" class="hidden fade-in h-full w-full">
+            <iframe src="task.html" class="w-full h-full border-0"></iframe>
+        </div>
+
+        <!-- VIEW: ASSIGNMENTS (Native) -->
+        <div id="view-assignments" class="hidden fade-in native-view-container">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Assignments Registry</h2>
+                    <p class="text-slate-500 text-sm">Global task list. Anyone can assign work.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Creator Panel -->
+                <div class="lg:col-span-4">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sticky top-24">
+                        <h3 class="text-sm font-bold uppercase text-slate-400 mb-4 tracking-wider">Assign New Task</h3>
+                        <form onsubmit="window.app.handleCreateTask(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                                <input type="text" name="title" required class="w-full bg-slate-50 border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Assignee</label>
+                                <input type="text" name="assignee" required class="w-full bg-slate-50 border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Member Name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
+                                <input type="date" name="dueDate" required class="w-full bg-slate-50 border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                <textarea name="description" rows="3" class="w-full bg-slate-50 border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                                Dispatch Assignment
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Global List -->
+                <div class="lg:col-span-8">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[500px] flex flex-col">
+                        <div class="p-4 border-b border-slate-100">
+                            <input type="text" id="filter-input" onkeyup="window.app.renderTasks()" placeholder="Filter assignments by name or title..." class="w-full pl-4 pr-4 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div id="global-task-list-container" class="divide-y divide-slate-100 p-2 flex-grow"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: REPORTS (Native) -->
+        <div id="view-report" class="hidden fade-in native-view-container space-y-6">
+            <h2 class="text-2xl font-bold text-slate-800">My Live Analytics</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-700 mb-4">My Task Completion (Real-time)</h3>
+                    <div class="h-64 flex justify-center relative">
+                        <canvas id="statusChart"></canvas>
+                        <div id="chart-no-data" class="absolute inset-0 flex items-center justify-center text-slate-400 hidden">No Data Available</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-700 mb-4">My Activity Heatmap (Last 7 Days)</h3>
+                    <canvas id="participationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: FEEDBACK (Native) -->
+        <div id="view-feedback" class="hidden fade-in native-view-container">
+             <div class="max-w-3xl mx-auto">
+                 <div class="text-center mb-8">
+                     <h2 class="text-2xl font-bold text-slate-800">Community Feedback</h2>
+                     <p class="text-slate-500 text-sm">Real-time suggestions and issues.</p>
+                 </div>
+
+                 <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 mb-8">
+                    <form onsubmit="window.app.handleFeedback(event)" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" name="name" class="w-full border-slate-200 bg-slate-50 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Name (Optional)">
+                            <select name="category" class="w-full border-slate-200 bg-slate-50 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                <option>Suggestion</option>
+                                <option>Issue</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <textarea name="message" required class="w-full border-slate-200 bg-slate-50 rounded-lg p-3 text-sm h-32 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Your message..."></textarea>
+                        <button type="submit" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg hover:bg-slate-900 transition-colors">
+                            Submit Feedback
+                        </button>
+                    </form>
+                 </div>
+                 
+                 <h3 class="font-bold text-slate-700 mb-4">Recent Submissions</h3>
+                 <div id="feedback-stream" class="space-y-4 pb-10">
+                     <div class="text-center text-slate-400 py-4">Loading stream...</div>
+                 </div>
+             </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- CUSTOM CONFIG PROVIDED BY USER ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyByNguF8LnWae1tehQFT3f0TGRsRtst-lk",
+          authDomain: "aiml-59e44.firebaseapp.com",
+          projectId: "aiml-59e44",
+          storageBucket: "aiml-59e44.appspot.com",
+          messagingSenderId: "495020918333",
+          appId: "1:495020918333:web:c6ed2308e89ad15d1f0c54"
+        };
+        
+        const appId = "aiml-59e44";
+        
+        // --- INIT ---
+        let auth, db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (e) { console.error("Firebase Init Error:", e); }
+
+        // --- STATE ---
+        let allTasks = [];
+        let allFeedbacks = [];
+        let allChats = [];
+        let allNotes = [];
+        let allResources = [];
+        let currentUser = null;
+        let isUILoggedIn = false;
+        let currentUsername = "Guest";
+        let mediaStream = null;
+        let timerInterval = null;
+        let timeLeft = 25 * 60;
+
+        // --- UTILS ---
+        const fileToBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
+        // --- APP CONTROLLER ---
+        window.app = {
+            init() {
+                // Ensure everything is hidden initially until auth
+                const viewHome = document.getElementById('view-home');
+                if (viewHome) viewHome.classList.add('hidden');
+                
+                // Initialize Auth Listener inside Init to ensure DOM is ready
+                if (auth) {
+                    this.setupAuthListener();
+                }
+            },
+
+            setupAuthListener() {
+                onAuthStateChanged(auth, (user) => {
+                    const guestActions = document.getElementById('header-guest-actions');
+                    const userProfile = document.getElementById('header-user-profile');
+                    const loginModal = document.getElementById('login-modal');
+
+                    if (user) {
+                        // User is signed in.
+                        currentUser = user;
+                        currentUsername = user.email.split('@')[0]; // Simple display name from email
+                        
+                        // Update UI elements safely
+                        document.querySelectorAll('.user-name-display').forEach(el => el.textContent = currentUsername);
+                        const navUserName = document.getElementById('nav-user-name');
+                        if (navUserName) navUserName.textContent = currentUsername;
+                        
+                        const userAvatar = document.getElementById('user-avatar');
+                        if (userAvatar) userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUsername)}&background=3b82f6&color=fff`;
+                        
+                        // Hide Modal & Unlock
+                        if (loginModal) loginModal.classList.add('hidden');
+                        if (guestActions) guestActions.classList.add('hidden');
+                        if (userProfile) userProfile.classList.remove('hidden');
+                        isUILoggedIn = true;
+                        
+                        // START DATA SYNC
+                        window.app.startDataSync();
+                        
+                        // Redirect to home if first load
+                        const viewHome = document.getElementById('view-home');
+                        if(viewHome && viewHome.classList.contains('hidden')) {
+                            window.app.showView('home');
+                        }
+                        window.app.showNotification(`Welcome, ${currentUsername}`, 'success');
+                    } else {
+                        // User is signed out.
+                        currentUser = null;
+                        isUILoggedIn = false;
+                        if (loginModal) loginModal.classList.remove('hidden'); // LOCK SCREEN
+                        if (guestActions) guestActions.classList.remove('hidden');
+                        if (userProfile) userProfile.classList.add('hidden');
+                    }
+                });
+            },
+
+            toggleSidebar() {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+                document.getElementById('main-frame').classList.toggle('collapsed');
+            },
+
+            showView(viewId) {
+                if (!isUILoggedIn) {
+                    this.showNotification("Please login first", "error");
+                    this.toggleLoginModal(true);
+                    return;
+                }
+
+                document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+                const activeLink = document.getElementById(`link-${viewId}`);
+                if(activeLink) activeLink.classList.add('active');
+
+                // Hide all views
+                ['home', 'task', 'assignments', 'report', 'feedback', 'profile', 'courses', 'chat', 'notes', 'library', 'focus'].forEach(id => {
+                    const el = document.getElementById(`view-${id}`);
+                    if(el) el.classList.add('hidden');
+                });
+
+                const target = document.getElementById(`view-${viewId}`);
+                if (target) {
+                    target.classList.remove('hidden');
+                    
+                    // Only apply fade-in to non-iframe views
+                    if (!['home', 'task', 'profile'].includes(viewId)) {
+                        target.classList.remove('fade-in');
+                        void target.offsetWidth;
+                        target.classList.add('fade-in');
+                    }
+                    
+                    if (viewId === 'report') setTimeout(() => this.renderCharts(), 100);
+                    // Scroll chat to bottom if chat view
+                    if (viewId === 'chat') {
+                        const c = document.getElementById('team-chat-messages');
+                        if(c) c.scrollTop = c.scrollHeight;
+                    }
+                }
+            },
+
+            toggleLoginModal(show) {
+                const modal = document.getElementById('login-modal');
+                if(!modal) return;
+                if(show) modal.classList.remove('hidden');
+                else modal.classList.add('hidden');
+            },
+
+            async handleLogin(e) {
+                e.preventDefault();
+                const email = e.target.email.value.trim();
+                const password = e.target.password.value;
+                const errorDiv = document.getElementById('login-error');
+                const btn = document.getElementById('login-btn');
+                
+                if(errorDiv) errorDiv.classList.add('hidden');
+                if(btn) {
+                    btn.textContent = "Verifying...";
+                    btn.disabled = true;
+                }
+
+                try {
+                    // Try to Sign In
+                    await signInWithEmailAndPassword(auth, email, password);
+                    // Success is handled by onAuthStateChanged
+                } catch (error) {
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                        // User doesn't exist, try to Create Account
+                        try {
+                            if(btn) btn.textContent = "Creating Account...";
+                            const cred = await createUserWithEmailAndPassword(auth, email, password);
+                            // Create initial profile doc
+                            await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'metadata'), {
+                                username: email.split('@')[0],
+                                email: email,
+                                joinedAt: new Date().toISOString()
+                            });
+                            // Success will trigger onAuthStateChanged
+                        } catch (createError) {
+                            console.error(createError);
+                            if(errorDiv) {
+                                errorDiv.textContent = createError.message;
+                                errorDiv.classList.remove('hidden');
+                            }
+                            if(btn) {
+                                btn.textContent = "Login / Sign Up";
+                                btn.disabled = false;
+                            }
+                        }
+                    } else {
+                        console.error(error);
+                        if(errorDiv) {
+                            errorDiv.textContent = error.message;
+                            errorDiv.classList.remove('hidden');
+                        }
+                        if(btn) {
+                            btn.textContent = "Login / Sign Up";
+                            btn.disabled = false;
+                        }
+                    }
+                }
+            },
+            
+            logout() {
+                signOut(auth).then(() => {
+                    this.showNotification("Logged out successfully", "success");
+                    location.reload();
+                });
+            },
+
+            startDataSync() {
+                const permissionError = (error) => {
+                    console.error("Firestore Sync Error:", error);
+                };
+
+                // Tasks
+                const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+                onSnapshot(tasksRef, (snapshot) => {
+                    allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                    this.renderTasks();
+                    this.renderCharts(); 
+                }, permissionError);
+
+                // Feedback
+                const feedbackRef = collection(db, 'artifacts', appId, 'public', 'data', 'feedbacks');
+                onSnapshot(feedbackRef, (snapshot) => {
+                    allFeedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allFeedbacks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    this.renderFeedbackStream();
+                }, permissionError);
+
+                // TEAM CHAT
+                const chatRef = collection(db, 'artifacts', appId, 'public', 'data', 'chats');
+                onSnapshot(chatRef, (snapshot) => {
+                    allChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allChats.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    this.renderChatStream(); // For class chat (legacy)
+                    this.renderTeamChat(); // For new team chat
+                }, permissionError);
+
+                // Private Notes
+                if (currentUser) {
+                    const notesRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'notes');
+                    onSnapshot(notesRef, (snapshot) => {
+                        allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        allNotes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        this.renderNotes();
+                    }, permissionError);
+                }
+
+                // Resources
+                const libraryRef = collection(db, 'artifacts', appId, 'public', 'data', 'resources');
+                onSnapshot(libraryRef, (snapshot) => {
+                    allResources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allResources.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    this.renderResources();
+                }, permissionError);
+            },
+
+            // --- CHAT RENDERERS ---
+            renderTeamChat() {
+                const container = document.getElementById('team-chat-messages');
+                if(!container) return;
+                
+                // Sort by oldest first for chat flow
+                const sortedChats = [...allChats].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                
+                container.innerHTML = sortedChats.map(c => `
+                    <div class="flex flex-col ${c.user === currentUsername ? 'items-end' : 'items-start'}">
+                        <div class="bg-white border ${c.user === currentUsername ? 'bg-blue-50 border-blue-200' : 'border-slate-200'} px-4 py-2 rounded-lg shadow-sm max-w-md">
+                            <div class="text-xs font-bold ${c.user === currentUsername ? 'text-blue-600' : 'text-slate-600'} mb-1">${this.escapeHtml(c.user)}</div>
+                            <div class="text-sm text-slate-700">${this.escapeHtml(c.message)}</div>
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1 mb-2">${new Date(c.timestamp).toLocaleTimeString()}</div>
+                    </div>
+                `).join('');
+                container.scrollTop = container.scrollHeight;
+            },
+            
+            // Legacy/Class Chat renderer
+            renderChatStream() {
+                const container = document.getElementById('class-chat-stream');
+                if(container) {
+                     // Sort oldest first
+                    const sortedChats = [...allChats].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    container.innerHTML = sortedChats.slice(-20).map(c => `
+                        <div class="text-sm">
+                            <span class="font-bold text-slate-700">${this.escapeHtml(c.user)}:</span>
+                            <span class="text-slate-600">${this.escapeHtml(c.message)}</span>
+                        </div>
+                    `).join('');
+                    container.scrollTop = container.scrollHeight;
+                }
+            },
+
+            // --- STANDARD UTILS ---
+            renderTasks() {
+                const filterInput = document.getElementById('filter-input');
+                const filter = filterInput ? filterInput.value.toLowerCase() : '';
+                
+                // Safely handle filtering
+                const myTasks = allTasks.filter(t => t.assignee && t.assignee.toLowerCase().includes(currentUsername.toLowerCase()));
+                const myContainer = document.getElementById('my-task-list-container');
+                if(myContainer) myContainer.innerHTML = myTasks.length ? myTasks.map(t => this.createTaskCard(t, true)).join('') : `<div class="p-8 text-center text-slate-400">No tasks assigned to you.</div>`;
+                
+                const globalTasks = allTasks.filter(t => (t.title && t.title.toLowerCase().includes(filter)) || (t.assignee && t.assignee.toLowerCase().includes(filter)));
+                const globalContainer = document.getElementById('global-task-list-container');
+                if(globalContainer) globalContainer.innerHTML = globalTasks.length ? globalTasks.map(t => this.createTaskCard(t, false)).join('') : `<div class="p-8 text-center text-slate-400">No matching records.</div>`;
+            },
+
+            toggleNoteInputs(type) {
+                const urlInput = document.getElementById('note-url-input');
+                const fileInput = document.getElementById('note-file-input');
+                if(urlInput) urlInput.classList.add('hidden');
+                if(fileInput) fileInput.classList.add('hidden');
+                
+                if(type === 'video' && urlInput) {
+                    urlInput.classList.remove('hidden');
+                } else if((type === 'image' || type === 'pdf') && fileInput) {
+                    fileInput.classList.remove('hidden');
+                }
+            },
+
+            async handleAddNote(e) {
+                e.preventDefault();
+                const f = e.target;
+                const type = f.type.value;
+                let mediaContent = null;
+
+                if (type === 'video') {
+                    mediaContent = f.mediaUrl.value;
+                } else if ((type === 'image' || type === 'pdf') && f.mediaFile.files[0]) {
+                    const file = f.mediaFile.files[0];
+                    if (file.size > 800000) { 
+                        this.showNotification("File too large (Max 800kb for sync)", "error");
+                        return;
+                    }
+                    mediaContent = await fileToBase64(file);
+                }
+
+                const newNote = {
+                    content: f.content.value.trim(),
+                    type: type,
+                    media: mediaContent,
+                    timestamp: new Date().toISOString()
+                };
+
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'notes'), newNote);
+                    f.reset();
+                    this.toggleNoteInputs('text');
+                    this.showNotification("Note Saved", "success");
+                } catch(err) { console.error(err); }
+            },
+
+            renderNotes() {
+                const container = document.getElementById('notes-grid');
+                if(!container) return;
+                
+                if(allNotes.length === 0) {
+                     container.innerHTML = `<div class="text-center text-slate-400 col-span-full py-12">No notes yet. Add one above!</div>`;
+                     return;
+                }
+
+                container.innerHTML = allNotes.map((note) => {
+                    let mediaHtml = '';
+                    if (note.type === 'image' && note.media) {
+                        mediaHtml = `<div class="note-media"><img src="${note.media}" alt="Note image"></div>`;
+                    } else if (note.type === 'video' && note.media) {
+                        let embedUrl = note.media.replace("watch?v=", "embed/");
+                        mediaHtml = `<div class="note-media"><iframe src="${embedUrl}" frameborder="0" allowfullscreen></iframe></div>`;
+                    } else if (note.type === 'pdf' && note.media) {
+                         mediaHtml = `<div class="mt-3"><a href="${note.media}" download="note_attachment.pdf" class="flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg text-sm hover:bg-red-100"><i class="fa-solid fa-file-pdf"></i> Download Attached PDF</a></div>`;
+                    }
+
+                    return `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 relative group shadow-sm hover:shadow-md transition-shadow">
+                            <button onclick="window.app.deleteNote('${note.id}')" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                            <p class="text-slate-800 font-medium">${this.escapeHtml(note.content)}</p>
+                            ${mediaHtml}
+                            <div class="mt-4 text-xs text-slate-400 flex justify-between items-end border-t pt-2 border-slate-50">
+                                <span>${new Date(note.timestamp).toLocaleDateString()}</span>
+                                <span class="uppercase font-bold text-[10px] tracking-wider bg-slate-100 px-2 py-1 rounded">${note.type}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            async deleteNote(id) {
+                if(confirm("Delete this note?")) {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'notes', id));
+                    } catch(err) { console.error(err); }
+                }
+            },
+
+            renderResources() {
+                const container = document.getElementById('resource-list');
+                if(!container) return;
+                if(allResources.length === 0) {
+                    container.innerHTML = `<div class="text-center text-slate-400 py-12">No resources shared yet.</div>`;
+                    return;
+                }
+                const icons = { 'article': 'fa-newspaper text-blue-500', 'video': 'fa-play-circle text-red-500', 'book': 'fa-book text-emerald-500', 'file': 'fa-file-arrow-down text-slate-600' };
+                container.innerHTML = allResources.map(res => `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-blue-300 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-xl">
+                                <i class="fa-solid ${icons[res.type] || 'fa-link'}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">${this.escapeHtml(res.title)}</h4>
+                                <div class="flex gap-2 text-xs text-slate-400 mt-0.5">
+                                    <span class="capitalize">${res.type}</span>
+                                    <span>•</span>
+                                    <span>Shared by ${this.escapeHtml(res.sharedBy)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="${this.escapeHtml(res.url)}" target="_blank" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                            <i class="fa-solid fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                `).join('');
+            },
+
+            renderFeedbackStream() {
+                const container = document.getElementById('feedback-stream');
+                if(!container) return;
+                if (allFeedbacks.length === 0) {
+                    container.innerHTML = `<div class="text-center text-slate-400 py-4">No feedback submitted yet.</div>`;
+                    return;
+                }
+                container.innerHTML = allFeedbacks.map(fb => `
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm fade-in">
+                        <div class="flex justify-between mb-2">
+                            <span class="font-bold text-slate-700 text-sm">${this.escapeHtml(fb.name)}</span>
+                            <span class="text-xs text-slate-400">${new Date(fb.timestamp).toLocaleDateString()}</span>
+                        </div>
+                        <div class="text-xs font-semibold text-blue-500 mb-1 uppercase">${this.escapeHtml(fb.category)}</div>
+                        <p class="text-slate-600 text-sm">${this.escapeHtml(fb.message)}</p>
+                    </div>
+                `).join('');
+            },
+
+            createTaskCard(task, isPersonal) {
+                const statusColor = task.status === 'completed' ? 'border-l-emerald-500' : 'border-l-amber-500';
+                const btnColor = task.status === 'completed' ? 'text-emerald-500' : 'text-slate-300 hover:text-blue-500';
+                
+                return `
+                <div class="p-4 bg-white hover:bg-slate-50 transition-all flex items-start gap-4 border-l-4 ${statusColor} ${isPersonal ? 'shadow-sm rounded-lg mb-2 border' : ''}">
+                    <button onclick="event.stopPropagation(); window.app.toggleStatus('${task.id}', '${task.status}')" class="mt-1 text-xl ${btnColor}">
+                        <i class="fa-solid ${task.status === 'completed' ? 'fa-circle-check' : 'fa-circle'}"></i>
+                    </button>
+                    <div class="flex-grow">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold text-slate-800 ${task.status === 'completed' ? 'line-through text-slate-400' : ''}">${this.escapeHtml(task.title)}</h4>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">${task.status}</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-1 line-clamp-2">${this.escapeHtml(task.description)}</p>
+                        <div class="flex items-center gap-4 mt-3 text-xs text-slate-400">
+                            <span><i class="fa-solid fa-user mr-1"></i> ${this.escapeHtml(task.assignee)}</span>
+                            <span><i class="fa-solid fa-calendar mr-1"></i> ${task.dueDate}</span>
+                        </div>
+                    </div>
+                </div>`;
+            },
+
+            async handleCreateTask(e) {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+                const newTask = {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    assignee: formData.get('assignee'),
+                    dueDate: formData.get('dueDate'),
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                };
+
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'tasks'), newTask);
+                    this.showNotification("Task Assigned Successfully", "success");
+                    form.reset();
+                } catch(err) { console.error(err); }
+            },
+
+            async handleAddResource(e) {
+                e.preventDefault();
+                const f = e.target;
+                const newRes = {
+                    title: f.title.value,
+                    url: f.url.value,
+                    type: f.type.value,
+                    sharedBy: currentUsername,
+                    timestamp: new Date().toISOString()
+                };
+                
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'resources'), newRes);
+                    f.reset();
+                    this.showNotification("Resource Shared", "success");
+                } catch(err) { console.error(err); }
+            },
+
+            async toggleStatus(id, current) {
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', id), {
+                        status: current === 'pending' ? 'completed' : 'pending'
+                    });
+                } catch(err) { console.error(err); }
+            },
+
+            async handleFeedback(e) {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+                const item = {
+                    name: formData.get('name') || 'Anonymous',
+                    category: formData.get('category'),
+                    message: formData.get('message'),
+                    timestamp: new Date().toISOString()
+                };
+
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'feedbacks'), item);
+                    this.showNotification("Feedback Sent", "success");
+                    form.reset();
+                } catch(err) { console.error(err); }
+            },
+
+            // --- TIMER LOGIC ---
+            setTimerMode(minutes) {
+                this.timerPause();
+                timeLeft = minutes * 60;
+                this.updateTimerDisplay();
+            },
+            updateTimerDisplay() {
+                const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                const s = (timeLeft % 60).toString().padStart(2, '0');
+                const timerEl = document.getElementById('timer-display');
+                if(timerEl) timerEl.textContent = `${m}:${s}`;
+            },
+            timerStart() {
+                if(timerInterval) return;
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    this.updateTimerDisplay();
+                    if(timeLeft <= 0) {
+                        this.timerPause();
+                        this.showNotification("Focus Session Complete!", "success");
+                    }
+                }, 1000);
+            },
+            timerPause() {
+                if(timerInterval) clearInterval(timerInterval);
+                timerInterval = null;
+            },
+            timerReset() {
+                this.timerPause();
+                timeLeft = 25 * 60;
+                this.updateTimerDisplay();
+            },
+
+            // --- VIDEO CLASSROOM LOGIC ---
+            joinLiveClass(courseName) {
+                const el = document.getElementById('live-room-interface');
+                if(el) el.classList.remove('hidden');
+                this.showNotification(`Joined ${courseName} session`, 'success');
+                this.startCamera();
+            },
+            async startCamera() {
+                try {
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    const video = document.getElementById('local-video');
+                    if(video) video.srcObject = mediaStream;
+                    const placeholder = document.getElementById('camera-placeholder');
+                    if(placeholder) placeholder.classList.add('hidden');
+                } catch (err) {
+                    console.error("Camera Error:", err);
+                    this.showNotification("Camera access denied or unavailable", "error");
+                }
+            },
+            toggleCamera() {
+                if (mediaStream) {
+                    const videoTrack = mediaStream.getVideoTracks()[0];
+                    if(videoTrack) {
+                        videoTrack.enabled = !videoTrack.enabled;
+                        const placeholder = document.getElementById('camera-placeholder');
+                        if(placeholder) {
+                            if(videoTrack.enabled) placeholder.classList.add('hidden');
+                            else placeholder.classList.remove('hidden');
+                        }
+                    }
+                }
+            },
+            toggleMic() {
+                if (mediaStream) {
+                    const audioTrack = mediaStream.getAudioTracks()[0];
+                    if(audioTrack) audioTrack.enabled = !audioTrack.enabled;
+                }
+            },
+            leaveClass() {
+                if(mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+                const el = document.getElementById('live-room-interface');
+                if(el) el.classList.add('hidden');
+            },
+            async sendChatMessage(e) {
+                e.preventDefault();
+                const input = e.target.message;
+                const msg = input.value.trim();
+                if (!msg) return;
+                const chatMsg = { user: currentUsername, message: msg, timestamp: new Date().toISOString() };
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chats'), chatMsg);
+                    input.value = '';
+                } catch(err) { console.error(err); }
+            },
+
+            // --- REPORTS ---
+            renderCharts() {
+                const ctxStatus = document.getElementById('statusChart');
+                const ctxPart = document.getElementById('participationChart');
+                if(!ctxStatus || !ctxPart) return;
+
+                const userTasks = allTasks.filter(t => t.assignee && t.assignee.toLowerCase().includes(currentUsername.toLowerCase()));
+                const completed = userTasks.filter(t => t.status === 'completed').length;
+                const pending = userTasks.length - completed;
+
+                if(window.statusChartInstance) window.statusChartInstance.destroy();
+                
+                const noData = document.getElementById('chart-no-data');
+                if(userTasks.length === 0) {
+                    if(noData) noData.classList.remove('hidden');
+                } else {
+                    if(noData) noData.classList.add('hidden');
+                    window.statusChartInstance = new Chart(ctxStatus, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Completed', 'Pending'],
+                            datasets: [{ data: [completed, pending], backgroundColor: ['#10b981', '#f59e0b'] }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                }
+
+                const last7Days = Array.from({length: 7}, (_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    return d.toISOString().split('T')[0];
+                }).reverse();
+                
+                const counts = last7Days.map(date => userTasks.filter(t => t.createdAt && t.createdAt.startsWith(date)).length);
+                
+                if(window.partChartInstance) window.partChartInstance.destroy();
+                window.partChartInstance = new Chart(ctxPart, {
+                    type: 'bar',
+                    data: {
+                        labels: last7Days.map(d => d.slice(5)), 
+                        datasets: [{ label: 'Tasks Assigned to Me', data: counts, backgroundColor: '#3b82f6' }]
+                    },
+                    options: { responsive: true }
+                });
+            },
+
+            showNotification(msg, type) {
+                const area = document.getElementById('notification-area');
+                if(!area) return;
+                const el = document.createElement('div');
+                const colors = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+                el.className = `${colors} text-white px-6 py-3 rounded-lg shadow-xl text-sm font-medium transform transition-all duration-300 translate-y-10 opacity-0 flex items-center gap-3`;
+                el.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check' : 'fa-info-circle'}"></i> ${msg}`;
+                area.appendChild(el);
+                requestAnimationFrame(() => el.classList.remove('translate-y-10', 'opacity-0'));
+                setTimeout(() => { el.classList.add('translate-y-4', 'opacity-0'); setTimeout(() => el.remove(), 300); }, 3000);
+            },
+            escapeHtml(str) {
+                return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]) : '';
+            }
+        };
+
+        // ROBUST STARTUP CHECK
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+        
+        document.getElementById('toggleSidebar').addEventListener('click', () => window.app.toggleSidebar());
+    </script>
+</body>
+</html>
