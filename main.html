@@ -18,25 +18,32 @@
         
         * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
         
+        /* CODING THEMED BACKGROUND */
         body { 
-            background: #f8fafc; 
+            background-color: #0f172a; /* Slate 900 */
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%), 
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+                linear-gradient(rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.95)),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23334155' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
             overflow: hidden; 
             height: 100vh;
-            color: #334155;
+            color: #e2e8f0; /* Light text for dark mode */
         }
 
         /* --- LAYOUT --- */
         header {
-            background: #ffffff;
+            background: rgba(30, 41, 59, 0.8); /* Semi-transparent slate 800 */
+            backdrop-filter: blur(10px);
             height: 64px;
             position: fixed;
             top: 0; left: 0; right: 0;
             z-index: 50;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #334155;
         }
 
         .sidebar {
-            background: #ffffff;
+            background: #1e293b; /* Slate 800 */
             width: 240px;
             height: calc(100vh - 64px);
             position: fixed;
@@ -45,7 +52,7 @@
             overflow-y: auto;
             z-index: 40;
             transition: width 0.3s ease;
-            border-right: 1px solid #e2e8f0;
+            border-right: 1px solid #334155;
         }
 
         .sidebar.collapsed { width: 72px; }
@@ -58,7 +65,7 @@
             padding: 0; 
             transition: margin-left 0.3s ease;
             position: relative;
-            background: #f8fafc;
+            background: transparent; /* Let body bg show through */
         }
 
         .main-frame.collapsed { margin-left: 72px; }
@@ -77,7 +84,7 @@
             gap: 14px;
             padding: 12px 16px;
             margin: 8px;
-            color: #64748b;
+            color: #94a3b8;
             border-radius: 8px;
             transition: all 0.2s ease;
             cursor: pointer;
@@ -86,8 +93,8 @@
         }
 
         .nav-link:hover, .nav-link.active {
-            background: #eff6ff;
-            color: #2563eb;
+            background: #334155;
+            color: #38bdf8; /* Light Blue */
         }
         
         .sidebar.collapsed .nav-link span { display: none; }
@@ -99,6 +106,7 @@
             overflow: hidden;
             position: relative;
             height: 100%;
+            border: 1px solid #334155;
         }
         
         video {
@@ -127,6 +135,21 @@
         }
         
         @keyframes splashFadeOut { to { opacity: 0; } }
+        
+        /* CARD STYLES FOR DARK THEME */
+        .card-dark {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #f1f5f9;
+        }
+        
+        .text-slate-800 { color: #f1f5f9 !important; }
+        .text-slate-700 { color: #e2e8f0 !important; }
+        .text-slate-600 { color: #cbd5e1 !important; }
+        .text-slate-500 { color: #94a3b8 !important; }
+        .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
+        .border-slate-200 { border-color: #334155 !important; }
+        .bg-slate-50 { background-color: #0f172a !important; }
 
         @media(max-width: 768px) {
             .sidebar { transform: translateX(-100%); width: 240px; }
@@ -148,37 +171,50 @@
     </div>
 
     <!-- LOGIN/SIGNUP MODAL -->
-    <div id="login-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden transition-opacity">
-        <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl transform scale-100 transition-transform">
+    <div id="login-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl transform scale-100 transition-transform border border-slate-700">
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Cortex Access</h2>
+                    <h2 class="text-2xl font-bold text-white">Cortex Access</h2>
                     <p class="text-xs text-slate-400 font-medium uppercase tracking-wide mt-1">Authentication Required</p>
                 </div>
             </div>
             
-            <p class="text-slate-500 mb-6 text-sm">Please verify your identity with Firebase to access the workspace.</p>
+            <!-- TOGGLE BUTTONS -->
+            <div class="flex bg-slate-900 p-1 rounded-lg mb-6">
+                <button onclick="window.app.setAuthMode('login')" id="tab-login" class="flex-1 py-2 rounded-md text-sm font-bold transition-all bg-slate-700 text-white shadow">Login</button>
+                <button onclick="window.app.setAuthMode('signup')" id="tab-signup" class="flex-1 py-2 rounded-md text-sm font-bold text-slate-400 transition-all hover:text-white">Sign Up</button>
+            </div>
             
-            <form onsubmit="window.app.handleLogin(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email Address</label>
+            <form onsubmit="window.app.handleAuth(event)" class="space-y-4">
+                <!-- Name Field (Controlled via JS) -->
+                <div id="auth-name-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Full Name</label>
                     <div class="relative">
-                        <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="email" name="email" required class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="name@example.com">
+                        <i class="fa-solid fa-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input type="text" name="displayName" class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-700 bg-slate-900 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="Your Name">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Email Address</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input type="email" name="email" required class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-700 bg-slate-900 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="name@example.com">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Password</label>
                     <div class="relative">
-                        <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="password" name="password" required class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••••••">
+                        <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input type="password" name="password" required class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-700 bg-slate-900 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••••••">
                     </div>
                 </div>
                 
                 <div id="login-error" class="text-red-500 text-xs text-center hidden"></div>
 
-                <button type="submit" id="login-btn" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition-colors shadow-lg mt-2">
-                    Login / Sign Up
+                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-lg mt-2">
+                    Login to Account
                 </button>
             </form>
         </div>
@@ -187,10 +223,10 @@
     <!-- HEADER -->
     <header class="flex items-center justify-between px-6 shadow-sm">
         <div class="flex items-center gap-4">
-            <button id="toggleSidebar" class="text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-colors">
+            <button id="toggleSidebar" class="text-slate-400 hover:bg-slate-800 p-2 rounded-lg transition-colors">
                 <i class="fa-solid fa-bars text-lg"></i>
             </button>
-            <div class="flex items-center gap-2 text-slate-800 font-bold text-xl tracking-tight">
+            <div class="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
                 <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm">
                     <i class="fa-solid fa-bolt"></i>
                 </div>
@@ -199,17 +235,17 @@
         </div>
 
         <div class="flex items-center gap-6">
-            <!-- Added Guest Actions to prevent JS errors if referenced -->
             <div id="header-guest-actions" class="hidden">
-                <button onclick="document.getElementById('login-modal').classList.remove('hidden')" class="text-sm font-bold text-slate-600 hover:text-blue-600">Login</button>
+                <button onclick="document.getElementById('login-modal').classList.remove('hidden')" class="text-sm font-bold text-slate-400 hover:text-blue-500">Login</button>
             </div>
 
             <div id="header-user-profile" class="flex items-center gap-3 cursor-pointer" onclick="window.app.showView('profile')">
                 <div class="text-right hidden sm:block">
-                    <p id="nav-user-name" class="text-slate-700 text-sm font-semibold">Guest</p>
-                    <p class="text-slate-400 text-xs">Verified</p>
+                    <p id="nav-user-name" class="text-slate-200 text-sm font-semibold">Guest</p>
+                    <p class="text-slate-500 text-xs">Verified</p>
                 </div>
-                <img src="https://ui-avatars.com/api/?name=Guest&background=e2e8f0&color=64748b" id="user-avatar" class="w-9 h-9 rounded-full border border-slate-200 object-cover" alt="Profile">
+                <!-- Avatar updated to use initials via API -->
+                <img src="https://ui-avatars.com/api/?name=Guest&background=3b82f6&color=fff" id="user-avatar" class="w-9 h-9 rounded-full border border-slate-700 object-cover" alt="Profile">
             </div>
         </div>
     </header>
@@ -217,7 +253,7 @@
     <!-- SIDEBAR -->
     <nav id="sidebar" class="sidebar shadow-sm scrollbar-hide">
         <div class="p-3">
-            <div class="text-xs font-bold text-slate-400 uppercase px-4 py-2 mt-2 mb-1">Workspace</div>
+            <div class="text-xs font-bold text-slate-500 uppercase px-4 py-2 mt-2 mb-1">Workspace</div>
             
             <div onclick="window.app.showView('home')" class="nav-link active" id="link-home">
                 <i class="fa-solid fa-house w-5 text-center"></i> <span>Dashboard</span>
@@ -229,7 +265,7 @@
                 <i class="fa-solid fa-sticky-note w-5 text-center"></i> <span>My Notes</span>
             </div>
             
-            <div class="mt-6 text-xs font-bold text-slate-400 uppercase px-4 py-2 mb-1">Learning</div>
+            <div class="mt-6 text-xs font-bold text-slate-500 uppercase px-4 py-2 mb-1">Learning</div>
             <div onclick="window.app.showView('courses')" class="nav-link" id="link-courses">
                 <i class="fa-solid fa-video w-5 text-center"></i> <span>Live Courses</span>
             </div>
@@ -237,7 +273,7 @@
                 <i class="fa-solid fa-book-open w-5 text-center"></i> <span>Library</span>
             </div>
 
-            <div class="mt-6 text-xs font-bold text-slate-400 uppercase px-4 py-2 mb-1">Activity</div>
+            <div class="mt-6 text-xs font-bold text-slate-500 uppercase px-4 py-2 mb-1">Activity</div>
             <div onclick="window.app.showView('task')" class="nav-link" id="link-task">
                 <i class="fa-solid fa-list-check w-5 text-center"></i> <span>My Tasks</span>
             </div>
@@ -248,7 +284,7 @@
                 <i class="fa-solid fa-chart-pie w-5 text-center"></i> <span>Analytics</span>
             </div>
             
-            <div class="mt-6 text-xs font-bold text-slate-400 uppercase px-4 py-2 mb-1">Connect</div>
+            <div class="mt-6 text-xs font-bold text-slate-500 uppercase px-4 py-2 mb-1">Connect</div>
             <div onclick="window.app.showView('chat')" class="nav-link" id="link-chat">
                 <i class="fa-solid fa-comments w-5 text-center"></i> <span>Team Chat</span>
             </div>
@@ -256,13 +292,10 @@
                 <i class="fa-solid fa-comment-dots w-5 text-center"></i> <span>Feedback</span>
             </div>
 
-            <div class="mt-6 text-xs font-bold text-slate-400 uppercase px-4 py-2 mb-1">User</div>
-            <div onclick="window.app.showView('profile')" class="nav-link" id="link-profile">
-                <i class="fa-solid fa-user w-5 text-center"></i> <span>Profile</span>
-            </div>
+         
             
             <div class="mt-auto pt-8">
-                 <div onclick="window.app.logout()" class="nav-link text-red-500 hover:bg-red-50 hover:text-red-600">
+                 <div onclick="window.app.logout()" style="margin-bottom: 0px;" class="nav-link text-red-400 hover:bg-red-900/20 hover:text-red-500">
                     <i class="fa-solid fa-power-off w-5 text-center"></i> <span>Disconnect</span>
                 </div>
             </div>
@@ -274,112 +307,74 @@
         
         <div id="notification-area" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-        <!-- VIEW: HOME (Dashboard) -->
-        <div id="view-home" class="fade-in native-view-container h-full">
-            <h2 class="text-2xl font-bold text-slate-800 mb-6">Welcome Back</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Simple Dashboard Cards to prevent empty state -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-blue-100 text-blue-600 rounded-lg"><i class="fa-solid fa-clock"></i></div>
-                        <div>
-                            <p class="text-sm text-slate-500">Focus Time</p>
-                            <h3 class="text-xl font-bold text-slate-800">0h 0m</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-green-100 text-green-600 rounded-lg"><i class="fa-solid fa-check-circle"></i></div>
-                        <div>
-                            <p class="text-sm text-slate-500">Tasks Done</p>
-                            <h3 class="text-xl font-bold text-slate-800">0</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-purple-100 text-purple-600 rounded-lg"><i class="fa-solid fa-star"></i></div>
-                        <div>
-                            <p class="text-sm text-slate-500">Streak</p>
-                            <h3 class="text-xl font-bold text-slate-800">1 Day</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="mt-8 bg-blue-600 text-white rounded-xl p-8 flex items-center justify-between">
-                <div>
-                    <h3 class="text-2xl font-bold mb-2">Start your learning journey</h3>
-                    <p class="text-blue-100">Access live courses and assignments directly from the sidebar.</p>
-                </div>
-                <button onclick="window.app.showView('courses')" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-bold shadow-lg">Browse Courses</button>
-            </div>
+        <!-- VIEW: HOME (Dashboard) - UPDATED TO student-home.html -->
+        <div id="view-home" class="fade-in native-view-container h-full" style="padding: 0; overflow: hidden;">
+            <iframe src="student-home.html" class="w-full h-full border-none" title="Student Dashboard"></iframe>
         </div>
 
         <!-- VIEW: FOCUS ZONE -->
         <div id="view-focus" class="hidden fade-in native-view-container space-y-6">
-            <h2 class="text-2xl font-bold text-slate-800">Focus Zone</h2>
+            <h2 class="text-2xl font-bold text-white">Focus Zone</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <!-- Timer Card -->
-                <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center justify-center text-center">
-                    <div class="w-64 h-64 rounded-full border-8 border-blue-100 flex items-center justify-center relative mb-8">
-                        <div class="text-6xl font-mono font-bold text-slate-800" id="timer-display">25:00</div>
+                <div class="card-dark p-8 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center">
+                    <div class="w-64 h-64 rounded-full border-8 border-slate-700 flex items-center justify-center relative mb-8">
+                        <div class="text-6xl font-mono font-bold text-white" id="timer-display">25:00</div>
                     </div>
                     <div class="flex gap-4">
                         <button onclick="window.app.timerStart()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-bold shadow-lg transition-transform hover:scale-105"><i class="fa-solid fa-play mr-2"></i> Start</button>
-                        <button onclick="window.app.timerPause()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-3 rounded-full font-bold transition-colors"><i class="fa-solid fa-pause"></i></button>
-                        <button onclick="window.app.timerReset()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-3 rounded-full font-bold transition-colors"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button onclick="window.app.timerPause()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-full font-bold transition-colors"><i class="fa-solid fa-pause"></i></button>
+                        <button onclick="window.app.timerReset()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-full font-bold transition-colors"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                     <div class="mt-6 flex gap-2">
-                        <button onclick="window.app.setTimerMode(25)" class="px-4 py-1 text-sm rounded-full bg-blue-50 text-blue-700 font-medium">Focus (25m)</button>
-                        <button onclick="window.app.setTimerMode(5)" class="px-4 py-1 text-sm rounded-full bg-green-50 text-green-700 font-medium">Break (5m)</button>
+                        <button onclick="window.app.setTimerMode(30)" class="px-4 py-1 text-sm rounded-full bg-blue-900/30 text-blue-400 border border-blue-800 font-medium">Focus (30m)</button>
+                        <button onclick="window.app.setTimerMode(10)" class="px-4 py-1 text-sm rounded-full bg-green-900/30 text-green-400 border border-green-800 font-medium">Break (10m)</button>
                     </div>
                 </div>
 
                 <!-- Task Context -->
-                <div class="bg-slate-900 text-white p-8 rounded-2xl shadow-lg flex flex-col">
+                <div class="bg-slate-800 border border-slate-700 text-white p-8 rounded-2xl shadow-lg flex flex-col">
                     <h3 class="font-bold text-xl mb-4">Current Session</h3>
-                    <div class="flex-grow flex items-center justify-center border-2 border-dashed border-slate-700 rounded-xl p-4 text-center text-slate-400">
+                    <div class="flex-grow flex items-center justify-center border-2 border-dashed border-slate-600 rounded-xl p-4 text-center text-slate-400">
                         <p>Select a task from your list to track focus time, or just focus freely.</p>
                     </div>
                     <div class="mt-6">
                         <h4 class="font-bold text-sm text-slate-400 uppercase mb-3">Ambient Sound</h4>
                         <div class="grid grid-cols-3 gap-3">
-                            <button class="p-3 bg-slate-800 rounded-lg hover:bg-slate-700 text-center text-xs"><i class="fa-solid fa-cloud-rain text-xl mb-1 block"></i> Rain</button>
-                            <button class="p-3 bg-slate-800 rounded-lg hover:bg-slate-700 text-center text-xs"><i class="fa-solid fa-coffee text-xl mb-1 block"></i> Cafe</button>
-                            <button class="p-3 bg-slate-800 rounded-lg hover:bg-slate-700 text-center text-xs"><i class="fa-solid fa-wind text-xl mb-1 block"></i> Wind</button>
+                            <button class="p-3 bg-slate-700 rounded-lg hover:bg-slate-600 text-center text-xs text-slate-300"><i class="fa-solid fa-cloud-rain text-xl mb-1 block"></i> Rain</button>
+                            <button class="p-3 bg-slate-700 rounded-lg hover:bg-slate-600 text-center text-xs text-slate-300"><i class="fa-solid fa-coffee text-xl mb-1 block"></i> Cafe</button>
+                            <button class="p-3 bg-slate-700 rounded-lg hover:bg-slate-600 text-center text-xs text-slate-300"><i class="fa-solid fa-wind text-xl mb-1 block"></i> Wind</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- VIEW: NOTES -->
+        <!-- VIEW: NOTES (PUBLIC) -->
         <div id="view-notes" class="hidden fade-in native-view-container space-y-6">
             <div class="flex justify-between items-center">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">My Notes</h2>
-                    <p class="text-slate-500 text-sm">Private digital notepad with file support.</p>
+                    <h2 class="text-2xl font-bold text-white">Public Notes</h2>
+                    <p class="text-slate-400 text-sm">Shared digital notepad with file support.</p>
                 </div>
             </div>
             
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+            <div class="card-dark p-6 rounded-xl shadow-sm mb-6">
                 <form onsubmit="window.app.handleAddNote(event)" class="space-y-3">
-                    <input type="text" name="content" required placeholder="Note title or text content..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="content" required placeholder="Note title or text content..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-500">
                     
                     <div class="flex flex-col md:flex-row gap-3">
-                        <select name="type" id="note-type-select" onchange="window.app.toggleNoteInputs(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <select name="type" id="note-type-select" onchange="window.app.toggleNoteInputs(this.value)" class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
                             <option value="text">Text Only</option>
                             <option value="video">Video URL (YouTube)</option>
                             <option value="image">Image File</option>
                             <option value="pdf">PDF File</option>
                         </select>
 
-                        <input type="url" name="mediaUrl" id="note-url-input" placeholder="Paste YouTube Link here..." class="hidden flex-grow bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                        <input type="file" name="mediaFile" id="note-file-input" accept="image/*,application/pdf" class="hidden flex-grow text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <input type="url" name="mediaUrl" id="note-url-input" placeholder="Paste YouTube Link here..." class="hidden flex-grow bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                        <input type="file" name="mediaFile" id="note-file-input" accept="image/*,application/pdf" class="hidden flex-grow text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-900 file:text-blue-300 hover:file:bg-blue-800">
 
-                        <button type="submit" class="bg-yellow-400 text-yellow-900 font-bold px-6 py-2 rounded-lg hover:bg-yellow-500 transition-colors whitespace-nowrap">
+                        <button type="submit" class="bg-yellow-500 text-slate-900 font-bold px-6 py-2 rounded-lg hover:bg-yellow-400 transition-colors whitespace-nowrap">
                             <i class="fa-solid fa-plus mr-2"></i> Save Note
                         </button>
                     </div>
@@ -387,64 +382,64 @@
             </div>
 
             <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="text-center text-slate-400 col-span-full py-12">Loading notes...</div>
+                <div class="text-center text-slate-500 col-span-full py-12">Loading notes...</div>
             </div>
         </div>
 
-        <!-- VIEW: LIBRARY -->
+        <!-- VIEW: LIBRARY (PUBLIC) -->
         <div id="view-library" class="hidden fade-in native-view-container space-y-6">
             <div class="flex justify-between items-center">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Resource Library</h2>
-                    <p class="text-slate-500 text-sm">Shared links, videos, and study materials.</p>
+                    <h2 class="text-2xl font-bold text-white">Resource Library</h2>
+                    <p class="text-slate-400 text-sm">Shared links, videos, and study materials.</p>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 class="font-bold text-slate-700 mb-4">Share a Resource</h3>
+            <div class="card-dark p-6 rounded-xl shadow-sm">
+                <h3 class="font-bold text-slate-200 mb-4">Share a Resource</h3>
                 <form onsubmit="window.app.handleAddResource(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <input type="text" name="title" required placeholder="Resource Title" class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                    <input type="url" name="url" required placeholder="https://..." class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                    <select name="type" class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="title" required placeholder="Resource Title" class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                    <input type="url" name="url" required placeholder="https://..." class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                    <select name="type" class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
                         <option value="article">Article/Web</option>
                         <option value="video">Video</option>
                         <option value="book">Book/PDF</option>
                         <option value="file">File Download</option>
                     </select>
-                    <button type="submit" class="bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-900 transition-colors">
+                    <button type="submit" class="bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors">
                         Share
                     </button>
                 </form>
             </div>
 
             <div id="resource-list" class="space-y-4">
-                 <div class="text-center text-slate-400 py-12">Loading resources...</div>
+                 <div class="text-center text-slate-500 py-12">Loading resources...</div>
             </div>
         </div>
 
         <!-- VIEW: COURSES -->
         <div id="view-courses" class="hidden fade-in native-view-container space-y-6">
-            <h2 class="text-2xl font-bold text-slate-800">Live Classroom</h2>
+            <h2 class="text-2xl font-bold text-white">Live Classroom</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div class="h-32 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center">
+                <div class="card-dark rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border-none">
+                    <div class="h-32 bg-gradient-to-r from-indigo-600 to-purple-700 flex items-center justify-center">
                         <i class="fa-solid fa-code text-white text-4xl opacity-50"></i>
                     </div>
                     <div class="p-6">
-                        <h3 class="font-bold text-lg text-slate-800 mb-2">Advanced Web Dev</h3>
-                        <p class="text-slate-500 text-sm mb-4">Master modern frameworks and real-time systems.</p>
-                        <button onclick="window.app.joinLiveClass('Web Dev')" class="w-full bg-slate-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-700">Start Session</button>
+                        <h3 class="font-bold text-lg text-white mb-2">Advanced Web Dev</h3>
+                        <p class="text-slate-400 text-sm mb-4">Master modern frameworks and real-time systems.</p>
+                        <button onclick="window.app.joinLiveClass('Web Dev')" class="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-600">Start Session</button>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div class="h-32 bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center">
+                <div class="card-dark rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border-none">
+                    <div class="h-32 bg-gradient-to-r from-emerald-600 to-teal-700 flex items-center justify-center">
                         <i class="fa-solid fa-database text-white text-4xl opacity-50"></i>
                     </div>
                     <div class="p-6">
-                        <h3 class="font-bold text-lg text-slate-800 mb-2">Database Architecture</h3>
-                        <p class="text-slate-500 text-sm mb-4">Scalable storage solutions with Firebase.</p>
-                        <button onclick="window.app.joinLiveClass('Database')" class="w-full bg-slate-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-700">Start Session</button>
+                        <h3 class="font-bold text-lg text-white mb-2">Database Architecture</h3>
+                        <p class="text-slate-400 text-sm mb-4">Scalable storage solutions with Firebase.</p>
+                        <button onclick="window.app.joinLiveClass('Database')" class="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-600">Start Session</button>
                     </div>
                 </div>
             </div>
@@ -467,21 +462,21 @@
                         </div>
                         
                         <div class="flex gap-4 justify-center mt-auto">
-                            <button onclick="window.app.toggleCamera()" class="p-4 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors"><i class="fa-solid fa-video"></i></button>
-                            <button onclick="window.app.toggleMic()" class="p-4 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors"><i class="fa-solid fa-microphone"></i></button>
-                            <button onclick="window.app.leaveClass()" class="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"><i class="fa-solid fa-phone-slash"></i></button>
+                            <button onclick="window.app.toggleCamera()" class="p-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"><i class="fa-solid fa-video"></i></button>
+                            <button onclick="window.app.toggleMic()" class="p-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"><i class="fa-solid fa-microphone"></i></button>
+                            <button onclick="window.app.leaveClass()" class="p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"><i class="fa-solid fa-phone-slash"></i></button>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-                        <div class="p-4 border-b border-slate-100 bg-slate-50 font-bold text-slate-700 flex justify-between items-center">
+                    <div class="card-dark rounded-xl shadow-sm flex flex-col overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 bg-slate-800 font-bold text-white flex justify-between items-center">
                             <span>Class Chat</span>
-                            <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Live</span>
+                            <span class="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full border border-green-800">Live</span>
                         </div>
-                        <div id="class-chat-stream" class="flex-grow p-4 overflow-y-auto space-y-3 bg-slate-50/30"></div>
-                        <div class="p-3 border-t border-slate-100">
+                        <div id="class-chat-stream" class="flex-grow p-4 overflow-y-auto space-y-3 bg-slate-900/50"></div>
+                        <div class="p-3 border-t border-slate-700">
                             <form onsubmit="window.app.sendChatMessage(event)" class="flex gap-2">
-                                <input type="text" name="message" class="flex-grow border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Type a message..." autocomplete="off">
+                                <input type="text" name="message" class="flex-grow bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white" placeholder="Type a message..." autocomplete="off">
                                 <button type="submit" class="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"><i class="fa-solid fa-paper-plane"></i></button>
                             </form>
                         </div>
@@ -490,68 +485,65 @@
             </div>
         </div>
 
-        <!-- VIEW: TEAM CHAT -->
+        <!-- VIEW: TEAM CHAT (PUBLIC) -->
         <div id="view-chat" class="hidden fade-in native-view-container h-full flex flex-col">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-slate-800">Team Chat</h2>
+                <h2 class="text-2xl font-bold text-white">Team Chat</h2>
                 <div class="text-xs text-slate-400">Connected to Firebase</div>
             </div>
-            <div class="flex-grow bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden h-[calc(100vh-180px)]">
-                <div id="team-chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4 bg-slate-50">
-                    <div class="text-center text-slate-400 text-sm py-10">Loading messages...</div>
+            <div class="flex-grow card-dark rounded-xl shadow-sm flex flex-col overflow-hidden h-[calc(100vh-180px)]">
+                <div id="team-chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4 bg-slate-900/50">
+                    <div class="text-center text-slate-500 text-sm py-10">Loading messages...</div>
                 </div>
-                <form onsubmit="window.app.sendChatMessage(event)" class="p-4 bg-white border-t border-slate-200 flex gap-2">
-                    <input type="text" name="message" class="flex-grow border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type a message..." autocomplete="off">
+                <form onsubmit="window.app.sendChatMessage(event)" class="p-4 bg-slate-800 border-t border-slate-700 flex gap-2">
+                    <input type="text" name="message" class="flex-grow bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white" placeholder="Type a message..." autocomplete="off">
                     <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-bold">Send</button>
                 </form>
             </div>
         </div>
 
-        <!-- VIEW: PROFILE (INTEGRATED) -->
+        <!-- VIEW: PROFILE (PRIVATE) -->
         <div id="view-profile" class="hidden fade-in native-view-container">
             <div id="profile-content">
-                <div class="text-center py-20 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-3xl"></i><br>Loading Profile...</div>
+                <div class="text-center py-20 text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-3xl"></i><br>Loading Profile...</div>
             </div>
         </div>
 
-        <!-- VIEW: MY TASKS (Replaced iframe with Native View) -->
-        <div id="view-task" class="hidden fade-in native-view-container">
-            <h2 class="text-2xl font-bold text-slate-800 mb-6">My Personal Tasks</h2>
-            <div id="my-task-list-container" class="space-y-4">
-                <div class="text-center text-slate-400 py-12">Loading personal tasks...</div>
-            </div>
+        <!-- VIEW: MY TASKS - UPDATED TO task.html -->
+        <div id="view-task" class="hidden fade-in native-view-container" style="padding: 0; overflow: hidden;">
+            <iframe src="task.html" class="w-full h-full border-none" title="Task Manager"></iframe>
         </div>
 
-        <!-- VIEW: ASSIGNMENTS -->
+        <!-- VIEW: ASSIGNMENTS (PUBLIC) -->
         <div id="view-assignments" class="hidden fade-in native-view-container">
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Assignments Registry</h2>
-                    <p class="text-slate-500 text-sm">Global task list. Anyone can assign work.</p>
+                    <h2 class="text-2xl font-bold text-white">Assignments Registry</h2>
+                    <p class="text-slate-400 text-sm">Global task list. Anyone can assign work.</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <!-- Creator Panel -->
                 <div class="lg:col-span-4">
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sticky top-24">
+                    <div class="card-dark rounded-xl shadow-sm p-6 sticky top-24">
                         <h3 class="text-sm font-bold uppercase text-slate-400 mb-4 tracking-wider">Assign New Task</h3>
                         <form onsubmit="window.app.handleCreateTask(event)" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Title</label>
-                                <input type="text" name="title" required class="w-full bg-slate-50 border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Title</label>
+                                <input type="text" name="title" required class="w-full bg-slate-900 border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Assignee</label>
-                                <input type="text" name="assignee" required class="w-full bg-slate-50 border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Member Name">
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Assignee</label>
+                                <input type="text" name="assignee" required class="w-full bg-slate-900 border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white" placeholder="Member Name">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
-                                <input type="date" name="dueDate" required class="w-full bg-slate-50 border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Due Date</label>
+                                <input type="date" name="dueDate" required class="w-full bg-slate-900 border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                                <textarea name="description" rows="3" class="w-full bg-slate-50 border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Description</label>
+                                <textarea name="description" rows="3" class="w-full bg-slate-900 border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white"></textarea>
                             </div>
                             <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
                                 Dispatch Assignment
@@ -562,11 +554,11 @@
 
                 <!-- Global List -->
                 <div class="lg:col-span-8">
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[500px] flex flex-col">
-                        <div class="p-4 border-b border-slate-100">
-                            <input type="text" id="filter-input" onkeyup="window.app.renderTasks()" placeholder="Filter assignments by name or title..." class="w-full pl-4 pr-4 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <div class="card-dark rounded-xl shadow-sm min-h-[500px] flex flex-col">
+                        <div class="p-4 border-b border-slate-700">
+                            <input type="text" id="filter-input" onkeyup="window.app.renderTasks()" placeholder="Filter assignments by name or title..." class="w-full pl-4 pr-4 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
                         </div>
-                        <div id="global-task-list-container" class="divide-y divide-slate-100 p-2 flex-grow"></div>
+                        <div id="global-task-list-container" class="divide-y divide-slate-700 p-2 flex-grow"></div>
                     </div>
                 </div>
             </div>
@@ -574,52 +566,52 @@
 
         <!-- VIEW: REPORTS -->
         <div id="view-report" class="hidden fade-in native-view-container space-y-6">
-            <h2 class="text-2xl font-bold text-slate-800">My Live Analytics</h2>
+            <h2 class="text-2xl font-bold text-white">My Live Analytics</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-slate-700 mb-4">My Task Completion (Real-time)</h3>
+                <div class="card-dark p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-slate-200 mb-4">My Task Completion (Real-time)</h3>
                     <div class="h-64 flex justify-center relative">
                         <canvas id="statusChart"></canvas>
-                        <div id="chart-no-data" class="absolute inset-0 flex items-center justify-center text-slate-400 hidden">No Data Available</div>
+                        <div id="chart-no-data" class="absolute inset-0 flex items-center justify-center text-slate-500 hidden">No Data Available</div>
                     </div>
                 </div>
                 
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-slate-700 mb-4">My Activity Heatmap (Last 7 Days)</h3>
+                <div class="card-dark p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-slate-200 mb-4">My Activity Heatmap (Last 7 Days)</h3>
                     <canvas id="participationChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- VIEW: FEEDBACK -->
+        <!-- VIEW: FEEDBACK (PUBLIC) -->
         <div id="view-feedback" class="hidden fade-in native-view-container">
              <div class="max-w-3xl mx-auto">
                  <div class="text-center mb-8">
-                     <h2 class="text-2xl font-bold text-slate-800">Community Feedback</h2>
-                     <p class="text-slate-500 text-sm">Real-time suggestions and issues.</p>
+                     <h2 class="text-2xl font-bold text-white">Community Feedback</h2>
+                     <p class="text-slate-400 text-sm">Real-time suggestions and issues.</p>
                  </div>
 
-                 <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 mb-8">
+                 <div class="card-dark p-8 rounded-xl shadow-sm mb-8">
                     <form onsubmit="window.app.handleFeedback(event)" class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
-                            <input type="text" name="name" class="w-full border-slate-200 bg-slate-50 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Name (Optional)">
-                            <select name="category" class="w-full border-slate-200 bg-slate-50 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" name="name" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-white" placeholder="Name (Optional)">
+                            <select name="category" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-white">
                                 <option>Suggestion</option>
                                 <option>Issue</option>
                                 <option>Other</option>
                             </select>
                         </div>
-                        <textarea name="message" required class="w-full border-slate-200 bg-slate-50 rounded-lg p-3 text-sm h-32 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Your message..."></textarea>
-                        <button type="submit" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg hover:bg-slate-900 transition-colors">
+                        <textarea name="message" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm h-32 outline-none focus:ring-2 focus:ring-blue-500 text-white" placeholder="Your message..."></textarea>
+                        <button type="submit" class="w-full bg-slate-700 text-white font-bold py-2.5 rounded-lg hover:bg-slate-600 transition-colors border border-slate-600">
                             Submit Feedback
                         </button>
                     </form>
                  </div>
                  
-                 <h3 class="font-bold text-slate-700 mb-4">Recent Submissions</h3>
+                 <h3 class="font-bold text-slate-300 mb-4">Recent Submissions</h3>
                  <div id="feedback-stream" class="space-y-4 pb-10">
-                     <div class="text-center text-slate-400 py-4">Loading stream...</div>
+                     <div class="text-center text-slate-500 py-4">Loading stream...</div>
                  </div>
              </div>
         </div>
@@ -629,7 +621,7 @@
     <!-- JAVASCRIPT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // --- CUSTOM CONFIG PROVIDED BY USER ---
@@ -675,7 +667,7 @@
             course: "General",
             location: "Unknown",
             bio: "I am using Cortex Workspace.",
-            avatarUrl: "",
+            avatarUrl: "", // Now handled by UI Avatars if empty
             coverUrl: "https://images.unsplash.com/photo-1557683316-973673baf926?w=1500",
             website: "",
             github: "",
@@ -700,6 +692,8 @@
 
         // --- APP CONTROLLER ---
         window.app = {
+            authMode: 'login',
+
             init() {
                 const viewHome = document.getElementById('view-home');
                 if (viewHome) viewHome.classList.add('hidden');
@@ -718,14 +712,16 @@
                     if (user) {
                         // User is signed in.
                         currentUser = user;
-                        currentUsername = user.email.split('@')[0];
+                        // Use displayName if available, fallback to email part
+                        currentUsername = user.displayName || user.email.split('@')[0];
                         
                         // Update UI elements
                         const navUserName = document.getElementById('nav-user-name');
                         if (navUserName) navUserName.textContent = currentUsername;
                         
                         const userAvatar = document.getElementById('user-avatar');
-                        if (userAvatar) userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUsername)}&background=3b82f6&color=fff`;
+                        // Use UI Avatars by default based on username
+                        if (userAvatar) userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUsername)}&background=3b82f6&color=fff&bold=true`;
                         
                         // Hide Modal & Unlock
                         if (loginModal) loginModal.classList.add('hidden');
@@ -733,9 +729,11 @@
                         if (userProfile) userProfile.classList.remove('hidden');
                         isUILoggedIn = true;
                         
-                        // START DATA SYNCS
-                        window.app.startDataSync();
-                        window.app.initProfile(user.email); // Init Profile Data using Email
+                        // START DATA SYNCS (Guard Clause enforced)
+                        if(currentUser) {
+                            window.app.startDataSync();
+                            window.app.initProfile(); 
+                        }
                         
                         const viewHome = document.getElementById('view-home');
                         if(viewHome && viewHome.classList.contains('hidden')) {
@@ -748,6 +746,9 @@
                         if (loginModal) loginModal.classList.remove('hidden');
                         if (guestActions) guestActions.classList.remove('hidden');
                         if (userProfile) userProfile.classList.add('hidden');
+                        
+                        // Default to Login mode when showing modal
+                        this.setAuthMode('login');
                     }
                 });
             },
@@ -793,53 +794,77 @@
                 }
             },
 
-            async handleLogin(e) {
+            setAuthMode(mode) {
+                this.authMode = mode;
+                const btnLogin = document.getElementById('tab-login');
+                const btnSignup = document.getElementById('tab-signup');
+                const submitBtn = document.getElementById('auth-submit-btn');
+                const nameField = document.getElementById('auth-name-container');
+                const nameInput = document.querySelector('input[name="displayName"]');
+                
+                if(mode === 'login') {
+                    btnLogin.className = "flex-1 py-2 rounded-md text-sm font-bold transition-all bg-slate-700 text-white shadow";
+                    btnSignup.className = "flex-1 py-2 rounded-md text-sm font-bold text-slate-400 transition-all hover:text-white";
+                    submitBtn.textContent = "Login to Account";
+                    
+                    // Hide name field and remove required attribute
+                    if(nameField) nameField.classList.add('hidden');
+                    if(nameInput) nameInput.removeAttribute('required');
+                } else {
+                    btnLogin.className = "flex-1 py-2 rounded-md text-sm font-bold text-slate-400 transition-all hover:text-white";
+                    btnSignup.className = "flex-1 py-2 rounded-md text-sm font-bold transition-all bg-slate-700 text-white shadow";
+                    submitBtn.textContent = "Create New Account";
+                    
+                    // Show name field and set required attribute
+                    if(nameField) nameField.classList.remove('hidden');
+                    if(nameInput) nameInput.setAttribute('required', 'true');
+                }
+            },
+
+            async handleAuth(e) {
                 e.preventDefault();
+                const name = e.target.displayName.value.trim();
                 const email = e.target.email.value.trim();
                 const password = e.target.password.value;
                 const errorDiv = document.getElementById('login-error');
-                const btn = document.getElementById('login-btn');
+                const btn = document.getElementById('auth-submit-btn');
                 
                 if(errorDiv) errorDiv.classList.add('hidden');
                 if(btn) {
-                    btn.textContent = "Verifying...";
+                    btn.textContent = "Processing...";
                     btn.disabled = true;
                 }
 
                 try {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } catch (error) {
-                    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                        try {
-                            if(btn) btn.textContent = "Creating Account...";
-                            const cred = await createUserWithEmailAndPassword(auth, email, password);
-                            // Initial metadata
-                            await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'metadata'), {
-                                username: email.split('@')[0],
-                                email: email,
-                                joinedAt: new Date().toISOString()
-                            });
-                        } catch (createError) {
-                            console.error(createError);
-                            if(errorDiv) {
-                                errorDiv.textContent = createError.message;
-                                errorDiv.classList.remove('hidden');
-                            }
-                            if(btn) {
-                                btn.textContent = "Login / Sign Up";
-                                btn.disabled = false;
-                            }
-                        }
+                    if (this.authMode === 'signup') {
+                        // Sign Up Flow
+                        const cred = await createUserWithEmailAndPassword(auth, email, password);
+                        // Update Auth Profile
+                        await updateProfile(cred.user, { displayName: name });
+                        // Save Metadata
+                        await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'metadata'), {
+                            username: name,
+                            email: email,
+                            joinedAt: new Date().toISOString()
+                        });
+                        // Initialize default profile data
+                        // NOTE: Using UID for strictly private path compliance
+                        const docRef = doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'data');
+                        await setDoc(docRef, { ...defaultProfile, displayName: name, email: email }, { merge: true });
+
                     } else {
-                        console.error(error);
-                        if(errorDiv) {
-                            errorDiv.textContent = error.message;
-                            errorDiv.classList.remove('hidden');
-                        }
-                        if(btn) {
-                            btn.textContent = "Login / Sign Up";
-                            btn.disabled = false;
-                        }
+                        // Login Flow
+                        await signInWithEmailAndPassword(auth, email, password);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    if(errorDiv) {
+                        errorDiv.textContent = error.message;
+                        errorDiv.classList.remove('hidden');
+                    }
+                    if(btn) {
+                        btn.textContent = this.authMode === 'login' ? "Login to Account" : "Create New Account";
+                        btn.disabled = false;
                     }
                 }
             },
@@ -852,9 +877,10 @@
             },
 
             startDataSync() {
+                if(!currentUser) return; // Strict Guard
                 const permissionError = (error) => console.error("Firestore Sync Error:", error);
 
-                // Tasks
+                // Tasks (Assignments - PUBLIC)
                 const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
                 onSnapshot(tasksRef, (snapshot) => {
                     allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -863,7 +889,7 @@
                     this.renderCharts(); 
                 }, permissionError);
 
-                // Feedback
+                // Feedback (PUBLIC)
                 const feedbackRef = collection(db, 'artifacts', appId, 'public', 'data', 'feedbacks');
                 onSnapshot(feedbackRef, (snapshot) => {
                     allFeedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -871,7 +897,7 @@
                     this.renderFeedbackStream();
                 }, permissionError);
 
-                // TEAM CHAT
+                // TEAM CHAT (PUBLIC)
                 const chatRef = collection(db, 'artifacts', appId, 'public', 'data', 'chats');
                 onSnapshot(chatRef, (snapshot) => {
                     allChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -880,17 +906,15 @@
                     this.renderTeamChat(); 
                 }, permissionError);
 
-                // Private Notes
-                if (currentUser) {
-                    const notesRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'notes');
-                    onSnapshot(notesRef, (snapshot) => {
-                        allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        allNotes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                        this.renderNotes();
-                    }, permissionError);
-                }
+                // Public Notes (Updated: Notes for all)
+                const notesRef = collection(db, 'artifacts', appId, 'public', 'data', 'notes');
+                onSnapshot(notesRef, (snapshot) => {
+                    allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allNotes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    this.renderNotes();
+                }, permissionError);
 
-                // Resources
+                // Resources (Library - PUBLIC)
                 const libraryRef = collection(db, 'artifacts', appId, 'public', 'data', 'resources');
                 onSnapshot(libraryRef, (snapshot) => {
                     allResources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -899,11 +923,12 @@
                 }, permissionError);
             },
 
-            // --- PROFILE LOGIC (New Integration) ---
-            initProfile(email) {
-                // Use sanitized email as key
-                const safeDocId = email.replace(/[^a-zA-Z0-9]/g, '_');
-                const docRef = doc(db, 'artifacts', appId, 'users', safeDocId, 'profile', 'data');
+            // --- PROFILE LOGIC (STRICTLY PRIVATE) ---
+            initProfile() {
+                if(!currentUser) return;
+                
+                // Use UID instead of sanitized email for safer/strict pathing
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'data');
                 
                 onSnapshot(docRef, (snapshot) => {
                     if (snapshot.exists()) {
@@ -912,7 +937,7 @@
                         isProfileEditing = false;
                     } else {
                         // Create new
-                        currentProfile = { ...defaultProfile, email: email };
+                        currentProfile = { ...defaultProfile, email: currentUser.email };
                         isProfileEditing = true;
                     }
                     if(document.getElementById('view-profile') && !document.getElementById('view-profile').classList.contains('hidden')) {
@@ -927,8 +952,8 @@
                 this.renderProfile();
 
                 try {
-                    const safeDocId = currentUser.email.replace(/[^a-zA-Z0-9]/g, '_');
-                    const docRef = doc(db, 'artifacts', appId, 'users', safeDocId, 'profile', 'data');
+                    // Use UID for strict path
+                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'data');
                     const dataToSave = JSON.parse(JSON.stringify(currentProfile));
                     await setDoc(docRef, { ...dataToSave, lastUpdated: serverTimestamp() }, { merge: true });
                     isProfileEditing = false;
@@ -969,58 +994,58 @@
 
                 // --- HTML Generators for Profile ---
                 const expHTML = currentProfile.experience.map(exp => `
-                    <div class="relative pl-6 border-l-2 border-slate-200 mb-4 group">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-4 border-white bg-blue-500"></div>
+                    <div class="relative pl-6 border-l-2 border-slate-600 mb-4 group">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-4 border-slate-800 bg-blue-500"></div>
                         ${isProfileEditing ? `
-                            <div class="grid gap-2 bg-slate-50 p-3 rounded border">
-                                <input value="${exp.role}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'role', this.value)" class="border p-1 rounded text-sm font-bold" placeholder="Role">
-                                <input value="${exp.company}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'company', this.value)" class="border p-1 rounded text-sm" placeholder="Company">
-                                <input value="${exp.year}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'year', this.value)" class="border p-1 rounded text-xs" placeholder="Year">
-                                <button onclick="window.app.removeProfItem('experience', ${exp.id})" class="text-red-500 text-xs text-right hover:underline">Remove</button>
+                            <div class="grid gap-2 bg-slate-800 p-3 rounded border border-slate-600">
+                                <input value="${exp.role}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'role', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-sm font-bold" placeholder="Role">
+                                <input value="${exp.company}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'company', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-sm" placeholder="Company">
+                                <input value="${exp.year}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'year', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-xs" placeholder="Year">
+                                <button onclick="window.app.removeProfItem('experience', ${exp.id})" class="text-red-400 text-xs text-right hover:underline">Remove</button>
                             </div>
                         ` : `
                             <div>
-                                <h4 class="font-bold text-slate-800">${exp.role}</h4>
-                                <div class="text-sm text-slate-600">${exp.company} <span class="text-xs bg-slate-100 px-2 rounded ml-2">${exp.year}</span></div>
+                                <h4 class="font-bold text-slate-200">${exp.role}</h4>
+                                <div class="text-sm text-slate-400">${exp.company} <span class="text-xs bg-slate-700 px-2 rounded ml-2 text-white">${exp.year}</span></div>
                             </div>
                         `}
                     </div>
                 `).join('');
 
                 const certHTML = currentProfile.certificates.map(c => `
-                    <div class="flex items-center gap-3 bg-white border p-3 rounded-lg mb-2">
+                    <div class="flex items-center gap-3 bg-slate-800 border border-slate-700 p-3 rounded-lg mb-2">
                         <i class="fa-solid fa-award text-yellow-500 text-xl"></i>
                         ${isProfileEditing ? `
                             <div class="flex-1 grid gap-1">
-                                <input value="${c.name}" oninput="window.app.updateProfItem('certificates', ${c.id}, 'name', this.value)" class="border p-1 rounded text-sm font-bold" placeholder="Name">
-                                <input value="${c.issuer}" oninput="window.app.updateProfItem('certificates', ${c.id}, 'issuer', this.value)" class="border p-1 rounded text-xs" placeholder="Issuer">
-                                <button onclick="window.app.removeProfItem('certificates', ${c.id})" class="text-red-500 text-xs text-left">Delete</button>
+                                <input value="${c.name}" oninput="window.app.updateProfItem('certificates', ${c.id}, 'name', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-sm font-bold" placeholder="Name">
+                                <input value="${c.issuer}" oninput="window.app.updateProfItem('certificates', ${c.id}, 'issuer', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-xs" placeholder="Issuer">
+                                <button onclick="window.app.removeProfItem('certificates', ${c.id})" class="text-red-400 text-xs text-left">Delete</button>
                             </div>
                         ` : `
                             <div>
-                                <div class="font-bold text-sm text-slate-800">${c.name}</div>
-                                <div class="text-xs text-slate-500">${c.issuer} • ${c.year}</div>
+                                <div class="font-bold text-sm text-slate-200">${c.name}</div>
+                                <div class="text-xs text-slate-400">${c.issuer} • ${c.year}</div>
                             </div>
                         `}
                     </div>
                 `).join('');
 
                 const projHTML = currentProfile.projects.map(p => `
-                    <div class="bg-white border rounded-lg p-4 mb-3 hover:shadow-sm transition-shadow">
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 mb-3 hover:shadow-sm transition-shadow">
                         ${isProfileEditing ? `
                             <div class="grid gap-2">
-                                <input value="${p.title}" oninput="window.app.updateProfItem('projects', ${p.id}, 'title', this.value)" class="border p-1 rounded font-bold" placeholder="Title">
-                                <textarea oninput="window.app.updateProfItem('projects', ${p.id}, 'desc', this.value)" class="border p-1 rounded text-sm" rows="2">${p.desc}</textarea>
-                                <input value="${p.link}" oninput="window.app.updateProfItem('projects', ${p.id}, 'link', this.value)" class="border p-1 rounded text-xs text-blue-500" placeholder="Link URL">
-                                <button onclick="window.app.removeProfItem('projects', ${p.id})" class="text-red-500 text-xs text-right">Remove Project</button>
+                                <input value="${p.title}" oninput="window.app.updateProfItem('projects', ${p.id}, 'title', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded font-bold" placeholder="Title">
+                                <textarea oninput="window.app.updateProfItem('projects', ${p.id}, 'desc', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-sm" rows="2">${p.desc}</textarea>
+                                <input value="${p.link}" oninput="window.app.updateProfItem('projects', ${p.id}, 'link', this.value)" class="border border-slate-600 bg-slate-900 text-blue-400 p-1 rounded text-xs" placeholder="Link URL">
+                                <button onclick="window.app.removeProfItem('projects', ${p.id})" class="text-red-400 text-xs text-right">Remove Project</button>
                             </div>
                         ` : `
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <div class="font-bold text-slate-800">${p.title}</div>
-                                    <div class="text-sm text-slate-600 mt-1">${p.desc}</div>
+                                    <div class="font-bold text-slate-200 text-sm">${p.title}</div>
+                                    <div class="text-xs text-slate-400">${p.desc}</div>
                                 </div>
-                                ${p.link ? `<a href="${p.link}" target="_blank" class="text-blue-500 hover:text-blue-700"><i class="fa-solid fa-external-link-alt"></i></a>` : ''}
+                                ${p.link ? `<a href="${p.link}" target="_blank" class="text-blue-400 hover:text-blue-300"><i class="fa-solid fa-external-link-alt"></i></a>` : ''}
                             </div>
                         `}
                     </div>
@@ -1034,11 +1059,11 @@
                             ${isProfileEditing ? `<input value="${currentProfile.coverUrl}" oninput="window.app.updateProfileField('coverUrl', this.value)" class="absolute top-4 right-4 bg-black/50 text-white text-xs p-2 rounded border-none backdrop-blur-md w-64 placeholder-gray-300" placeholder="Cover Image URL">` : ''}
                         </div>
                         
-                        <div class="bg-white rounded-b-2xl shadow-sm border-x border-b border-slate-200 p-6 md:p-8 relative">
+                        <div class="bg-slate-800 rounded-b-2xl shadow-sm border border-slate-700 p-6 md:p-8 relative">
                             <div class="flex flex-col md:flex-row gap-6">
                                 <!-- Avatar -->
                                 <div class="-mt-20 shrink-0 relative">
-                                    <img src="${currentProfile.avatarUrl || 'https://ui-avatars.com/api/?name=User&background=cbd5e1'}" class="w-32 h-32 rounded-full border-4 border-white shadow-md object-cover bg-white">
+                                    <img src="${currentProfile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentProfile.displayName)}&background=3b82f6&color=fff&bold=true`}" class="w-32 h-32 rounded-full border-4 border-slate-800 shadow-md object-cover bg-slate-700">
                                     ${isProfileEditing ? `<div class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg text-xs cursor-help" title="Paste URL in Edit Mode"><i class="fa-solid fa-camera"></i></div>` : ''}
                                 </div>
                                 
@@ -1047,51 +1072,51 @@
                                     <div class="flex justify-between items-start">
                                         <div class="w-full mr-4">
                                             ${isProfileEditing ? `
-                                                <input value="${currentProfile.displayName}" oninput="window.app.updateProfileField('displayName', this.value)" class="text-2xl font-bold text-slate-900 w-full border-b border-blue-200 outline-none mb-1" placeholder="Name">
-                                                <input value="${currentProfile.title}" oninput="window.app.updateProfileField('title', this.value)" class="text-slate-600 w-full border-b border-slate-200 outline-none mb-2" placeholder="Title">
-                                                <input value="${currentProfile.avatarUrl}" oninput="window.app.updateProfileField('avatarUrl', this.value)" class="text-xs text-slate-400 w-full bg-slate-50 p-1 rounded" placeholder="Avatar URL">
+                                                <input value="${currentProfile.displayName}" oninput="window.app.updateProfileField('displayName', this.value)" class="text-2xl font-bold text-white bg-transparent w-full border-b border-blue-500 outline-none mb-1" placeholder="Name">
+                                                <input value="${currentProfile.title}" oninput="window.app.updateProfileField('title', this.value)" class="text-slate-400 bg-transparent w-full border-b border-slate-600 outline-none mb-2" placeholder="Title">
+                                                <input value="${currentProfile.avatarUrl}" oninput="window.app.updateProfileField('avatarUrl', this.value)" class="text-xs text-slate-500 w-full bg-slate-900 border border-slate-700 p-1 rounded" placeholder="Custom Avatar URL (Optional)">
                                             ` : `
-                                                <h1 class="text-3xl font-bold text-slate-900">${currentProfile.displayName}</h1>
-                                                <p class="text-slate-600">${currentProfile.title}</p>
+                                                <h1 class="text-3xl font-bold text-white">${currentProfile.displayName}</h1>
+                                                <p class="text-slate-400">${currentProfile.title}</p>
                                             `}
                                         </div>
-                                        <button onclick="${isProfileEditing ? 'window.app.saveProfile()' : 'window.app.toggleProfileEdit()'}" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-slate-700 transition-all text-sm whitespace-nowrap">
+                                        <button onclick="${isProfileEditing ? 'window.app.saveProfile()' : 'window.app.toggleProfileEdit()'}" class="bg-slate-700 text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-slate-600 transition-all text-sm whitespace-nowrap border border-slate-600">
                                             ${isProfileSaving ? '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving' : (isProfileEditing ? '<i class="fa-solid fa-save"></i> Save' : '<i class="fa-solid fa-pen"></i> Edit')}
                                         </button>
                                     </div>
                                     
                                     <!-- Meta -->
-                                    <div class="flex flex-wrap gap-3 mt-4 text-sm text-slate-600">
+                                    <div class="flex flex-wrap gap-3 mt-4 text-sm text-slate-400">
                                         ${isProfileEditing ? `
-                                            <input value="${currentProfile.course}" oninput="window.app.updateProfileField('course', this.value)" class="bg-slate-50 border rounded px-2 py-1" placeholder="Course">
-                                            <input value="${currentProfile.location}" oninput="window.app.updateProfileField('location', this.value)" class="bg-slate-50 border rounded px-2 py-1" placeholder="Location">
+                                            <input value="${currentProfile.course}" oninput="window.app.updateProfileField('course', this.value)" class="bg-slate-900 border border-slate-700 text-white rounded px-2 py-1" placeholder="Course">
+                                            <input value="${currentProfile.location}" oninput="window.app.updateProfileField('location', this.value)" class="bg-slate-900 border border-slate-700 text-white rounded px-2 py-1" placeholder="Location">
                                         ` : `
-                                            <span class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-100"><i class="fa-solid fa-graduation-cap text-blue-500"></i> ${currentProfile.course}</span>
-                                            <span class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-100"><i class="fa-solid fa-map-marker-alt text-blue-500"></i> ${currentProfile.location}</span>
+                                            <span class="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-full border border-slate-700"><i class="fa-solid fa-graduation-cap text-blue-500"></i> ${currentProfile.course}</span>
+                                            <span class="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-full border border-slate-700"><i class="fa-solid fa-map-marker-alt text-blue-500"></i> ${currentProfile.location}</span>
                                         `}
                                     </div>
                                 </div>
                             </div>
 
-                            <hr class="my-8 border-slate-100">
+                            <hr class="my-8 border-slate-700">
 
                             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                 <!-- Left Column -->
                                 <div class="space-y-8">
                                     <section>
-                                        <h3 class="font-bold text-slate-800 uppercase text-xs tracking-wider mb-3">About</h3>
-                                        ${isProfileEditing ? `<textarea oninput="window.app.updateProfileField('bio', this.value)" class="w-full border rounded p-2 text-sm h-32">${currentProfile.bio}</textarea>` : `<p class="text-slate-600 text-sm leading-relaxed">${currentProfile.bio}</p>`}
+                                        <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider mb-3">About</h3>
+                                        ${isProfileEditing ? `<textarea oninput="window.app.updateProfileField('bio', this.value)" class="w-full bg-slate-900 border border-slate-700 text-white rounded p-2 text-sm h-32">${currentProfile.bio}</textarea>` : `<p class="text-slate-300 text-sm leading-relaxed">${currentProfile.bio}</p>`}
                                     </section>
                                     
                                     <section>
-                                        <h3 class="font-bold text-slate-800 uppercase text-xs tracking-wider mb-3">Connect</h3>
+                                        <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider mb-3">Connect</h3>
                                         <div class="space-y-2">
                                             ${['website', 'github', 'linkedin'].map(p => `
                                                 <div class="flex items-center gap-3">
-                                                    <div class="w-8 h-8 bg-slate-50 rounded flex items-center justify-center text-slate-400 border"><i class="fa-brands fa-${p === 'website' ? 'chrome' : p}"></i></div>
+                                                    <div class="w-8 h-8 bg-slate-900 rounded flex items-center justify-center text-slate-400 border border-slate-700"><i class="fa-brands fa-${p === 'website' ? 'chrome' : p}"></i></div>
                                                     ${isProfileEditing ? 
-                                                        `<input value="${currentProfile[p]}" oninput="window.app.updateProfileField('${p}', this.value)" class="flex-1 border rounded px-2 py-1 text-xs" placeholder="${p} URL">` : 
-                                                        (currentProfile[p] ? `<a href="${currentProfile[p]}" target="_blank" class="text-sm text-blue-600 hover:underline truncate w-40">${p}</a>` : `<span class="text-xs text-slate-400 italic">Not added</span>`)
+                                                        `<input value="${currentProfile[p]}" oninput="window.app.updateProfileField('${p}', this.value)" class="flex-1 bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 text-xs" placeholder="${p} URL">` : 
+                                                        (currentProfile[p] ? `<a href="${currentProfile[p]}" target="_blank" class="text-sm text-blue-400 hover:underline truncate w-40">${p}</a>` : `<span class="text-xs text-slate-600 italic">Not added</span>`)
                                                     }
                                                 </div>
                                             `).join('')}
@@ -1100,10 +1125,10 @@
 
                                     <section>
                                         <div class="flex justify-between items-center mb-3">
-                                            <h3 class="font-bold text-slate-800 uppercase text-xs tracking-wider">Certifications</h3>
+                                            <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Certifications</h3>
                                             ${isProfileEditing ? `<button onclick="window.app.addProfItem('certificates', {name:'Cert Name', issuer:'Issuer', year:'2024'})" class="text-blue-500 text-xs"><i class="fa-solid fa-plus"></i></button>` : ''}
                                         </div>
-                                        ${certHTML || '<div class="text-xs text-slate-400 italic">No certifications.</div>'}
+                                        ${certHTML || '<div class="text-xs text-slate-600 italic">No certifications.</div>'}
                                     </section>
                                 </div>
 
@@ -1111,25 +1136,25 @@
                                 <div class="lg:col-span-2 space-y-8">
                                     <section>
                                         <div class="flex justify-between items-center mb-4">
-                                            <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-briefcase text-blue-500 mr-2"></i> Experience</h3>
-                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('experience', {role:'Role', company:'Company', year:'2024'})" class="bg-blue-50 text-blue-600 px-3 py-1 rounded text-xs font-bold hover:bg-blue-100">Add Role</button>` : ''}
+                                            <h3 class="font-bold text-white text-lg"><i class="fa-solid fa-briefcase text-blue-500 mr-2"></i> Experience</h3>
+                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('experience', {role:'Role', company:'Company', year:'2024'})" class="bg-slate-700 text-blue-400 border border-slate-600 px-3 py-1 rounded text-xs font-bold hover:bg-slate-600">Add Role</button>` : ''}
                                         </div>
-                                        <div>${expHTML || '<div class="p-6 border-2 border-dashed border-slate-100 rounded-xl text-center text-slate-400">No experience listed.</div>'}</div>
+                                        <div>${expHTML || '<div class="p-6 border-2 border-dashed border-slate-700 rounded-xl text-center text-slate-500">No experience listed.</div>'}</div>
                                     </section>
 
                                     <section>
                                         <div class="flex justify-between items-center mb-4">
-                                            <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-layer-group text-blue-500 mr-2"></i> Projects</h3>
-                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('projects', {title:'Project Title', desc:'Description', link:''})" class="bg-blue-50 text-blue-600 px-3 py-1 rounded text-xs font-bold hover:bg-blue-100">Add Project</button>` : ''}
+                                            <h3 class="font-bold text-white text-lg"><i class="fa-solid fa-layer-group text-blue-500 mr-2"></i> Projects</h3>
+                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('projects', {title:'Project Title', desc:'Description', link:''})" class="bg-slate-700 text-blue-400 border border-slate-600 px-3 py-1 rounded text-xs font-bold hover:bg-slate-600">Add Project</button>` : ''}
                                         </div>
-                                        <div>${projHTML || '<div class="p-6 border-2 border-dashed border-slate-100 rounded-xl text-center text-slate-400">No projects showcase.</div>'}</div>
+                                        <div>${projHTML || '<div class="p-6 border-2 border-dashed border-slate-700 rounded-xl text-center text-slate-500">No projects showcase.</div>'}</div>
                                     </section>
 
                                     <section>
-                                        <h3 class="font-bold text-slate-800 uppercase text-xs tracking-wider mb-3">Skills</h3>
+                                        <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider mb-3">Skills</h3>
                                         ${isProfileEditing ? 
-                                            `<textarea oninput="window.app.updateProfileSkills(this.value)" class="w-full border rounded p-2 text-sm">${currentProfile.skills.join(', ')}</textarea><p class="text-xs text-slate-400 mt-1">Comma separated</p>` : 
-                                            `<div class="flex flex-wrap gap-2">${currentProfile.skills.map(s => `<span class="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium border border-slate-200">${s}</span>`).join('')}</div>`
+                                            `<textarea oninput="window.app.updateProfileSkills(this.value)" class="w-full bg-slate-900 border border-slate-700 text-white rounded p-2 text-sm">${currentProfile.skills.join(', ')}</textarea><p class="text-xs text-slate-500 mt-1">Comma separated</p>` : 
+                                            `<div class="flex flex-wrap gap-2">${currentProfile.skills.map(s => `<span class="px-3 py-1 bg-slate-900 text-slate-300 rounded-lg text-sm font-medium border border-slate-700">${s}</span>`).join('')}</div>`
                                         }
                                     </section>
                                 </div>
@@ -1178,12 +1203,13 @@
                 const filter = filterInput ? filterInput.value.toLowerCase() : '';
                 
                 const myTasks = allTasks.filter(t => t.assignee && t.assignee.toLowerCase().includes(currentUsername.toLowerCase()));
+                // Note: 'my-task-list-container' is removed in updated view-task, but function remains for safety/other views
                 const myContainer = document.getElementById('my-task-list-container');
-                if(myContainer) myContainer.innerHTML = myTasks.length ? myTasks.map(t => this.createTaskCard(t, true)).join('') : `<div class="p-8 text-center text-slate-400">No tasks assigned to you.</div>`;
+                if(myContainer) myContainer.innerHTML = myTasks.length ? myTasks.map(t => this.createTaskCard(t, true)).join('') : `<div class="p-8 text-center text-slate-500">No tasks assigned to you.</div>`;
                 
                 const globalTasks = allTasks.filter(t => (t.title && t.title.toLowerCase().includes(filter)) || (t.assignee && t.assignee.toLowerCase().includes(filter)));
                 const globalContainer = document.getElementById('global-task-list-container');
-                if(globalContainer) globalContainer.innerHTML = globalTasks.length ? globalTasks.map(t => this.createTaskCard(t, false)).join('') : `<div class="p-8 text-center text-slate-400">No matching records.</div>`;
+                if(globalContainer) globalContainer.innerHTML = globalTasks.length ? globalTasks.map(t => this.createTaskCard(t, false)).join('') : `<div class="p-8 text-center text-slate-500">No matching records.</div>`;
             },
 
             toggleNoteInputs(type) {
@@ -1224,7 +1250,7 @@
                 };
 
                 try {
-                    await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'notes'), newNote);
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notes'), newNote);
                     f.reset();
                     this.toggleNoteInputs('text');
                     this.showNotification("Note Saved", "success");
@@ -1236,8 +1262,8 @@
                 if(!container) return;
                 
                 if(allNotes.length === 0) {
-                     container.innerHTML = `<div class="text-center text-slate-400 col-span-full py-12">No notes yet. Add one above!</div>`;
-                     return;
+                      container.innerHTML = `<div class="text-center text-slate-500 col-span-full py-12">No notes yet. Add one above!</div>`;
+                      return;
                 }
 
                 container.innerHTML = allNotes.map((note) => {
@@ -1248,19 +1274,19 @@
                         let embedUrl = note.media.replace("watch?v=", "embed/");
                         mediaHtml = `<div class="note-media"><iframe src="${embedUrl}" frameborder="0" allowfullscreen></iframe></div>`;
                     } else if (note.type === 'pdf' && note.media) {
-                         mediaHtml = `<div class="mt-3"><a href="${note.media}" download="note_attachment.pdf" class="flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg text-sm hover:bg-red-100"><i class="fa-solid fa-file-pdf"></i> Download Attached PDF</a></div>`;
+                         mediaHtml = `<div class="mt-3"><a href="${note.media}" download="note_attachment.pdf" class="flex items-center gap-2 text-red-400 bg-red-900/20 p-2 rounded-lg text-sm hover:bg-red-900/40"><i class="fa-solid fa-file-pdf"></i> Download Attached PDF</a></div>`;
                     }
 
                     return `
-                        <div class="bg-white p-6 rounded-xl border border-slate-200 relative group shadow-sm hover:shadow-md transition-shadow">
+                        <div class="card-dark p-6 rounded-xl relative group shadow-sm hover:shadow-md transition-shadow">
                             <button onclick="window.app.deleteNote('${note.id}')" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <i class="fa-solid fa-times"></i>
                             </button>
-                            <p class="text-slate-800 font-medium">${escapeHtml(note.content)}</p>
+                            <p class="text-slate-200 font-medium">${escapeHtml(note.content)}</p>
                             ${mediaHtml}
-                            <div class="mt-4 text-xs text-slate-400 flex justify-between items-end border-t pt-2 border-slate-50">
+                            <div class="mt-4 text-xs text-slate-500 flex justify-between items-end border-t pt-2 border-slate-700">
                                 <span>${new Date(note.timestamp).toLocaleDateString()}</span>
-                                <span class="uppercase font-bold text-[10px] tracking-wider bg-slate-100 px-2 py-1 rounded">${note.type}</span>
+                                <span class="uppercase font-bold text-[10px] tracking-wider bg-slate-700 text-slate-300 px-2 py-1 rounded">${note.type}</span>
                             </div>
                         </div>
                     `;
@@ -1270,7 +1296,7 @@
             async deleteNote(id) {
                 if(confirm("Delete this note?")) {
                     try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'notes', id));
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notes', id));
                     } catch(err) { console.error(err); }
                 }
             },
@@ -1279,10 +1305,10 @@
                 const container = document.getElementById('resource-list');
                 if(!container) return;
                 if(allResources.length === 0) {
-                    container.innerHTML = `<div class="text-center text-slate-400 py-12">No resources shared yet.</div>`;
+                    container.innerHTML = `<div class="text-center text-slate-500 py-12">No resources shared yet.</div>`;
                     return;
                 }
-                const icons = { 'article': 'fa-newspaper text-blue-500', 'video': 'fa-play-circle text-red-500', 'book': 'fa-book text-emerald-500', 'file': 'fa-file-arrow-down text-slate-600' };
+                const icons = { 'article': 'fa-newspaper text-blue-500', 'video': 'fa-play-circle text-red-500', 'book': 'fa-book text-emerald-500', 'file': 'fa-file-arrow-down text-slate-400' };
                 container.innerHTML = allResources.map(res => `
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-blue-300 transition-colors">
                         <div class="flex items-center gap-4">
@@ -1309,37 +1335,39 @@
                 const container = document.getElementById('feedback-stream');
                 if(!container) return;
                 if (allFeedbacks.length === 0) {
-                    container.innerHTML = `<div class="text-center text-slate-400 py-4">No feedback submitted yet.</div>`;
+                    container.innerHTML = `<div class="text-center text-slate-500 py-4">No feedback submitted yet.</div>`;
                     return;
                 }
                 container.innerHTML = allFeedbacks.map(fb => `
-                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm fade-in">
+                    <div class="card-dark p-4 rounded-xl shadow-sm fade-in border border-slate-700">
                         <div class="flex justify-between mb-2">
-                            <span class="font-bold text-slate-700 text-sm">${escapeHtml(fb.name)}</span>
-                            <span class="text-xs text-slate-400">${new Date(fb.timestamp).toLocaleDateString()}</span>
+                            <span class="font-bold text-slate-200 text-sm">${escapeHtml(fb.name)}</span>
+                            <span class="text-xs text-slate-500">${new Date(fb.timestamp).toLocaleDateString()}</span>
                         </div>
-                        <div class="text-xs font-semibold text-blue-500 mb-1 uppercase">${escapeHtml(fb.category)}</div>
-                        <p class="text-slate-600 text-sm">${escapeHtml(fb.message)}</p>
+                        <div class="text-xs font-semibold text-blue-400 mb-1 uppercase">${escapeHtml(fb.category)}</div>
+                        <p class="text-slate-400 text-sm">${escapeHtml(fb.message)}</p>
                     </div>
                 `).join('');
             },
 
             createTaskCard(task, isPersonal) {
                 const statusColor = task.status === 'completed' ? 'border-l-emerald-500' : 'border-l-amber-500';
-                const btnColor = task.status === 'completed' ? 'text-emerald-500' : 'text-slate-300 hover:text-blue-500';
+                const btnColor = task.status === 'completed' ? 'text-emerald-500' : 'text-slate-600 hover:text-blue-400';
+                const bgColor = 'bg-slate-800 hover:bg-slate-700'; // Dark mode card bg
+                const titleColor = task.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-200';
                 
                 return `
-                <div class="p-4 bg-white hover:bg-slate-50 transition-all flex items-start gap-4 border-l-4 ${statusColor} ${isPersonal ? 'shadow-sm rounded-lg mb-2 border' : ''}">
+                <div class="p-4 ${bgColor} transition-all flex items-start gap-4 border-l-4 ${statusColor} ${isPersonal ? 'shadow-sm rounded-lg mb-2 border border-slate-700' : ''}">
                     <button onclick="event.stopPropagation(); window.app.toggleStatus('${task.id}', '${task.status}')" class="mt-1 text-xl ${btnColor}">
                         <i class="fa-solid ${task.status === 'completed' ? 'fa-circle-check' : 'fa-circle'}"></i>
                     </button>
                     <div class="flex-grow">
                         <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-slate-800 ${task.status === 'completed' ? 'line-through text-slate-400' : ''}">${escapeHtml(task.title)}</h4>
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">${task.status}</span>
+                            <h4 class="font-bold ${titleColor}">${escapeHtml(task.title)}</h4>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-900 text-slate-400 uppercase border border-slate-700">${task.status}</span>
                         </div>
-                        <p class="text-sm text-slate-600 mt-1 line-clamp-2">${escapeHtml(task.description)}</p>
-                        <div class="flex items-center gap-4 mt-3 text-xs text-slate-400">
+                        <p class="text-sm text-slate-400 mt-1 line-clamp-2">${escapeHtml(task.description)}</p>
+                        <div class="flex items-center gap-4 mt-3 text-xs text-slate-500">
                             <span><i class="fa-solid fa-user mr-1"></i> ${escapeHtml(task.assignee)}</span>
                             <span><i class="fa-solid fa-calendar mr-1"></i> ${task.dueDate}</span>
                         </div>
