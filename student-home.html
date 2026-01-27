@@ -1,251 +1,1001 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Teacher Admin Activity Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - CORTEX Live</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        
+        * { font-family: 'Poppins', sans-serif; box-sizing: border-box; }
+        
+        body { 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100%;
+            color: #e8e9f3;
+        }
 
-  <!-- Fonts & Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+        .grad-card {
+            background: linear-gradient(135deg, rgba(20, 33, 61, 0.8), rgba(15, 52, 96, 0.6));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.1);
+        }
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+        .card-hover {
+            transition: all 0.3s ease;
+        }
 
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            primary: "#6366f1",
-          },
-          fontFamily: {
-            display: ["Inter", "sans-serif"],
-          },
-          borderRadius: {
-            DEFAULT: "12px",
-          },
-        },
-      },
-    };
+        .card-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
 
-    function toggleDarkMode() {
-      document.documentElement.classList.toggle("dark");
-    }
-  </script>
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-  <style>
-    body {
-      font-family: "Inter", sans-serif;
-    }
-  </style>
+        .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .badge-green { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+        .badge-orange { background: rgba(249, 115, 22, 0.15); color: #fb923c; }
+        .badge-red { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+        .badge-purple { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            transition: width 0.3s ease;
+        }
+
+        .intro-section {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(168, 85, 247, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+
+        .live-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .fade-in { animation: fadeIn 0.6s ease; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .update-indicator {
+            font-size: 10px;
+            color: #60a5fa;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.5); }
+    </style>
 </head>
+<body class="fade-in">
+    <div class="p-8 h-full overflow-y-auto">
+        
+        <!-- Introduction Section -->
+        <div class="intro-section mb-8">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h1 class="text-4xl font-extrabold text-white mb-2">Welcome Back to Your Learning Hub</h1>
+                    <p class="text-slate-300 text-lg">Real-time tracking of your academic progress and assignments</p>
+                </div>
+                <div class="text-right">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="live-dot"></span>
+                        <span class="text-sm text-green-400 font-semibold">Live Updates</span>
+                    </div>
+                    <p class="text-xs text-slate-400" id="current-date">Loading...</p>
+                    <p class="text-xs text-blue-400 update-indicator" id="update-time">Syncing...</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-4 gap-4 mt-6">
+                <div class="text-center p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                    <p class="text-2xl font-bold text-blue-400" id="total-courses">0</p>
+                    <p class="text-xs text-slate-400 mt-1">Active Courses</p>
+                </div>
+                <div class="text-center p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
+                    <p class="text-2xl font-bold text-orange-400" id="pending-tasks">0</p>
+                    <p class="text-xs text-slate-400 mt-1">Pending Tasks</p>
+                </div>
+                <div class="text-center p-3 bg-green-500/10 rounded-lg border border-green-500/30">
+                    <p class="text-2xl font-bold text-green-400" id="completion-rate">0%</p>
+                    <p class="text-xs text-slate-400 mt-1">Completion Rate</p>
+                </div>
+                <div class="text-center p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
+                    <p class="text-2xl font-bold text-purple-400" id="gpa-display">0.0</p>
+                    <p class="text-xs text-slate-400 mt-1">Current GPA</p>
+                </div>
+            </div>
+        </div>
 
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+        <!-- LIVE COMMUNITY & SYSTEM STATS SECTION -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <!-- Total Students -->
+            <div class="grad-card card-hover p-6 rounded-2xl">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <p class="text-slate-400 text-sm mb-1">Total Students (5-Day Avg)</p>
+                        <p class="text-3xl font-bold text-blue-400" id="total-students-stat">0</p>
+                    </div>
+                    <i class="fa-solid fa-users text-2xl text-blue-500/40"></i>
+                </div>
+                <div class="flex items-center gap-1 text-xs">
+                    <span class="live-dot"></span>
+                    <span id="students-trend" class="text-green-400">Live</span>
+                </div>
+            </div>
 
-<main class="p-8 max-w-7xl mx-auto">
+            <!-- Active Students Now -->
+            <div class="grad-card card-hover p-6 rounded-2xl">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <p class="text-slate-400 text-sm mb-1">Active Now</p>
+                        <p class="text-3xl font-bold text-emerald-400" id="active-students-now">0</p>
+                    </div>
+                    <i class="fa-solid fa-circle-nodes text-2xl text-emerald-500/40"></i>
+                </div>
+                <div class="flex items-center gap-1 text-xs">
+                    <span class="live-dot" style="background: #10b981;"></span>
+                    <span class="text-emerald-400">Real-time</span>
+                </div>
+            </div>
 
-  <!-- HEADER -->
-  <div class="mb-8">
-    <h1 class="text-4xl font-bold mb-1">Welcome 👋</h1>
-    <p class="text-slate-500 dark:text-slate-400">
-      Monitor student progress and activities in real time
-    </p>
-  </div>
+            <!-- Avg Performance (5 Days) -->
+            <div class="grad-card card-hover p-6 rounded-2xl">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <p class="text-slate-400 text-sm mb-1">Avg Performance</p>
+                        <p class="text-3xl font-bold text-amber-400" id="avg-performance-5d">0%</p>
+                    </div>
+                    <i class="fa-solid fa-chart-line text-2xl text-amber-500/40"></i>
+                </div>
+                <p class="text-xs text-slate-500">Last 5 days average</p>
+            </div>
 
-  <!-- STATUS BAR -->
-  <div class="flex gap-8 mb-8">
-    <p>Status: <span id="status">--</span></p>
-    <p>Login Count: <span id="loginCount">0</span></p>
-  </div>
+            <!-- System Load -->
+            <div class="grad-card card-hover p-6 rounded-2xl">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <p class="text-slate-400 text-sm mb-1">System Health</p>
+                        <p class="text-3xl font-bold text-green-400" id="system-health">99%</p>
+                    </div>
+                    <i class="fa-solid fa-heartbeat text-2xl text-green-500/40"></i>
+                </div>
+                <div class="flex items-center gap-1 text-xs">
+                    <span class="live-dot"></span>
+                    <span class="text-green-400">Optimal</span>
+                </div>
+            </div>
+        </div>
 
-  <!-- STATS -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow">
-      <p class="text-sm text-slate-500">Total Students</p>
-      <h2 class="text-3xl font-bold" id="memberCount">0</h2>
+        <!-- Main Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            
+            <!-- Left Column -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- Courses Section -->
+                <div class="grad-card card-hover p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-white">My Courses</h2>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400" id="courses-update-time">--:--:--</span>
+                            <span class="live-dot"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4" id="courses-container">
+                        <div class="flex items-center justify-center py-8 text-slate-400">
+                            <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading courses...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course Progress -->
+                <div class="grad-card card-hover p-6 rounded-2xl">
+                    <h2 class="text-2xl font-bold text-white mb-6">Course Progress Overview</h2>
+                    
+                    <div class="space-y-5" id="progress-container">
+                        <div class="flex items-center justify-center py-8 text-slate-400">
+                            <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading progress...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignments Table -->
+                <div class="grad-card card-hover p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-white">Your Assignments</h2>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400" id="assignments-update-time">--:--:--</span>
+                            <span class="live-dot"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="border-b border-blue-500/20">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-300">Assignment</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-300">Course</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-300">Due Date</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-300">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assignments-table">
+                                <tr class="border-b border-slate-700/50">
+                                    <td colspan="4" class="px-4 py-8 text-center text-slate-400">
+                                        <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading assignments...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-8">
+                
+                <!-- Total Assignments Stats -->
+                <div class="grad-card card-hover p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white">Assignment Summary</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400" id="summary-update-time">--:--:--</span>
+                            <span class="live-dot"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-slate-800/40 rounded-lg">
+                            <span class="text-slate-300">
+                                <i class="fa-solid fa-circle-check text-green-400 mr-2"></i>Completed
+                            </span>
+                            <span class="font-bold text-green-400" id="completed-count">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-800/40 rounded-lg">
+                            <span class="text-slate-300">
+                                <i class="fa-solid fa-hourglass-half text-orange-400 mr-2"></i>In Progress
+                            </span>
+                            <span class="font-bold text-orange-400" id="progress-count">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-800/40 rounded-lg">
+                            <span class="text-slate-300">
+                                <i class="fa-solid fa-exclamation-circle text-red-400 mr-2"></i>Pending
+                            </span>
+                            <span class="font-bold text-red-400" id="pending-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Deadlines -->
+                <div class="grad-card card-hover p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="text-xl font-bold text-white">Upcoming Deadlines</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400" id="deadlines-update-time">--:--:--</span>
+                            <span class="live-dot"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3" id="deadlines-container">
+                        <div class="flex items-center justify-center py-6 text-slate-400">
+                            <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="grad-card card-hover p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="text-xl font-bold text-white">Recent Activity</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400" id="activity-update-time">--:--:--</span>
+                            <span class="live-dot"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4" id="activity-container">
+                        <div class="flex items-center justify-center py-6 text-slate-400">
+                            <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Overview -->
+                <div class="grad-card card-hover p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-white">Performance Overview</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400" id="chart-update-time">--:--:--</span>
+                            <span class="live-dot"></span>
+                        </div>
+                    </div>
+                    <canvas id="performanceChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow">
-      <p class="text-sm text-slate-500">Assignments</p>
-      <h2 class="text-3xl font-bold" id="assignmentCount">0</h2>
-    </div>
+    <script>
+        // Firebase Config
+        let db = null;
+        let currentUser = null;
+        let firebaseReady = false;
 
-    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow">
-      <p class="text-sm text-slate-500">Online Students</p>
-      <h2 class="text-3xl font-bold" id="onlineCount">0</h2>
-    </div>
-  </div>
+        // Dashboard Data
+        const dashboardData = {
+            courses: [],
+            assignments: [],
+            progress: [],
+            activities: [],
+            communityStats: {
+                totalStudents: 0,
+                activeNow: 0,
+                avgPerformance5d: 0,
+                historicalData: [] // Store 5 days of data
+            }
+        };
 
-  <!-- STUDENT TABLE -->
-  <div class="bg-white dark:bg-slate-800 rounded-xl shadow overflow-hidden">
-    <div class="p-6 border-b border-slate-200 dark:border-slate-700">
-      <h2 class="text-lg font-bold">Student Activity Tracking</h2>
-    </div>
+        // Local Storage for 5-day history tracking
+        function initializeHistoricalData() {
+            const key = 'dashboard_5day_history';
+            let history = JSON.parse(localStorage.getItem(key)) || [];
+            
+            // Keep only last 5 days
+            const now = new Date();
+            const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+            history = history.filter(entry => new Date(entry.date) > fiveDaysAgo);
+            
+            dashboardData.communityStats.historicalData = history;
+            return history;
+        }
 
-    <table class="w-full text-left">
-      <thead class="bg-slate-100 dark:bg-slate-700 text-sm">
-        <tr>
-          <th class="p-4">Email</th>
-          <th class="p-4">Progress</th>
-          <th class="p-4">Status</th>
-        </tr>
-      </thead>
-      <tbody id="studentTable"></tbody>
-    </table>
-  </div>
+        // Store daily metrics in localStorage (5-day sliding window)
+        function storeDailyMetrics() {
+            const key = 'dashboard_5day_history';
+            const today = new Date().toISOString().split('T')[0];
+            
+            let history = JSON.parse(localStorage.getItem(key)) || [];
+            const completed = dashboardData.assignments.filter(a => a.status === 'completed').length;
+            const total = dashboardData.assignments.length;
+            
+            // Check if today's entry exists
+            const todayEntry = history.find(h => h.date === today);
+            
+            const dailyMetric = {
+                date: today,
+                totalStudents: dashboardData.communityStats.totalStudents,
+                completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+                activeUsers: dashboardData.communityStats.activeNow,
+                coursesActive: dashboardData.courses.length
+            };
+            
+            if (todayEntry) {
+                Object.assign(todayEntry, dailyMetric);
+            } else {
+                history.push(dailyMetric);
+            }
+            
+            // Keep only 5 days
+            const fiveDaysAgo = new Date();
+            fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+            history = history.filter(entry => new Date(entry.date) >= fiveDaysAgo);
+            
+            localStorage.setItem(key, JSON.stringify(history));
+            dashboardData.communityStats.historicalData = history;
+        }
 
-</main>
+        // Calculate 5-day averages
+        function calculate5DayAverages() {
+            const history = dashboardData.communityStats.historicalData;
+            
+            if (history.length === 0) {
+                return { avgStudents: 0, avgPerformance: 0, avgActive: 0 };
+            }
+            
+            const avgStudents = Math.round(history.reduce((sum, h) => sum + h.totalStudents, 0) / history.length);
+            const avgPerformance = Math.round(history.reduce((sum, h) => sum + h.completionRate, 0) / history.length);
+            const avgActive = Math.round(history.reduce((sum, h) => sum + h.activeUsers, 0) / history.length);
+            
+            return { avgStudents, avgPerformance, avgActive };
+        }
 
-<!-- ================= FIREBASE LOGIC ================= -->
+        // Update Community Statistics (simulated Firebase data)
+        function updateCommunityStats() {
+            // Simulate real-time community data from Firebase
+            const baseStudents = 450 + Math.floor(Math.random() * 100);
+            const activeNow = Math.floor(baseStudents * (0.15 + Math.random() * 0.25)); // 15-40% active
+            
+            dashboardData.communityStats.totalStudents = baseStudents;
+            dashboardData.communityStats.activeNow = activeNow;
+            
+            // Store and calculate averages
+            storeDailyMetrics();
+            const averages = calculate5DayAverages();
+            dashboardData.communityStats.avgPerformance5d = averages.avgPerformance;
+            
+            // Update UI
+            document.getElementById('total-students-stat').textContent = baseStudents;
+            document.getElementById('active-students-now').textContent = activeNow;
+            document.getElementById('avg-performance-5d').textContent = averages.avgPerformance + '%';
+            
+            const trend = activeNow > (baseStudents * 0.20) ? 'Growing ↑' : 'Stable →';
+            document.getElementById('students-trend').textContent = trend;
+        }
 
-<script type="module">
-  import { auth, db } from "./firebase-config.js";
-  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-  import {
-    doc,
-    setDoc,
-    updateDoc,
-    serverTimestamp,
-    collection,
-    onSnapshot
-  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+        // Fetch Firebase Student Data (simulated)
+        async function fetchFirebaseStudentMetrics() {
+            try {
+                if (window.parent !== window && window.parent.allTasks) {
+                    // Count unique assignees to get student count
+                    const uniqueStudents = new Set();
+                    window.parent.allTasks.forEach(t => {
+                        if (t.assignee) uniqueStudents.add(t.assignee);
+                    });
+                    
+                    dashboardData.communityStats.totalStudents = uniqueStudents.size || 0;
+                }
+                
+                updateCommunityStats();
+            } catch (e) {
+                console.log('Error fetching metrics:', e);
+            }
+        }
 
-  /* ================= AUTH + PRESENCE ================= */
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) return;
+        // Initialize Firebase Connection
+        async function initFirebase() {
+            try {
+                if (window.parent !== window && window.parent.db) {
+                    db = window.parent.db;
+                    currentUser = window.parent.currentUser;
+                    firebaseReady = true;
+                    console.log('Firebase initialized from parent');
+                    setupFirestoreListeners();
+                }
+            } catch (e) {
+                console.log('Firebase not available from parent');
+            }
+        }
 
-    const ref = doc(db, "teachers", user.uid);
+        // Setup Real-time Firestore Listeners
+        function setupFirestoreListeners() {
+            if (!db || !window.parent.onSnapshot) return;
 
-    await setDoc(ref, {
-      email: user.email,
-      status: "online",
-      lastLogin: serverTimestamp(),
-      role: "teacher"
-    }, { merge: true });
+            const { collection, onSnapshot } = window.parent;
 
-    document.getElementById("status").innerText = "online";
-  });
+            try {
+                const tasksRef = collection(db, 'artifacts', window.parent.appId, 'public', 'data', 'tasks');
+                onSnapshot(tasksRef, (snapshot) => {
+                    dashboardData.assignments = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return { 
+                            id: doc.id,
+                            title: data.title || 'Untitled',
+                            course: data.course || data.category || 'Unknown',
+                            status: data.status || 'pending',
+                            dueDate: data.dueDate || new Date().toISOString().split('T')[0],
+                            description: data.description || '',
+                            assignee: data.assignee || 'Unknown'
+                        };
+                    });
+                    updateAssignmentData();
+                    updateUpdateTime();
+                    storeDailyMetrics(); // Update metrics on task changes
+                });
+            } catch (e) {
+                console.log('Firestore tasks listener error', e);
+            }
+        }
 
-  window.addEventListener("unload", () => {
-    if (auth.currentUser) {
-      updateDoc(doc(db, "teachers", auth.currentUser.uid), {
-        status: "offline"
-      });
-    }
-  });
+        // Update Date & Time
+        function updateDate() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const today = new Date().toLocaleDateString('en-US', options);
+            document.getElementById('current-date').textContent = today;
+        }
 
-  /* ================= LIVE STUDENTS ================= */
-  const table = document.getElementById("studentTable");
-  const onlineCountEl = document.getElementById("onlineCount");
+        // Update timestamp
+        function updateUpdateTime() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('update-time').textContent = `Updated: ${time}`;
+        }
 
-  onSnapshot(collection(db, "students"), (snapshot) => {
-    table.innerHTML = "";
-    let online = 0;
+        // Sync with parent window (main.html) and UPDATE DATA
+        function syncWithParent() {
+            try {
+                if (window.parent !== window) {
+                    // Get parent data - THIS UPDATES dashboardData
+                    if (window.parent.allTasks && window.parent.allTasks.length > 0) {
+                        dashboardData.assignments = window.parent.allTasks.map(t => ({
+                            id: t.id,
+                            title: t.title || 'Untitled',
+                            course: t.course || t.category || 'Unknown',
+                            status: t.status || 'pending',
+                            dueDate: t.dueDate || new Date().toISOString().split('T')[0],
+                            description: t.description || '',
+                            assignee: t.assignee || 'Unknown'
+                        }));
+                    }
+                    
+                    // Sync global app data if available
+                    if (window.parent.globalAppData) {
+                        if (window.parent.globalAppData.courses) dashboardData.courses = window.parent.globalAppData.courses;
+                        if (window.parent.globalAppData.activities) dashboardData.activities = window.parent.globalAppData.activities;
+                        if (window.parent.globalAppData.progress) dashboardData.progress = window.parent.globalAppData.progress;
+                    }
+                    
+                    // Fetch student metrics
+                    fetchFirebaseStudentMetrics();
+                }
+            } catch (e) {
+                console.log('Sync error:', e);
+            }
+        }
 
-    snapshot.forEach(doc => {
-      const s = doc.data();
-      if (s.status === "online") online++;
+        // Simulate live data changes for demo/testing
+        function simulateLiveDataChanges() {
+            // Randomly update completion rates for demo
+            if (dashboardData.progress.length > 0) {
+                dashboardData.progress.forEach(p => {
+                    if (Math.random() > 0.6) {
+                        p.completed = Math.min(p.total, p.completed + 1);
+                        p.percentage = Math.round((p.completed / p.total) * 100);
+                    }
+                });
+            }
 
-      table.innerHTML += `
-        <tr class="border-t border-slate-200 dark:border-slate-700">
-          <td class="p-4">${s.email}</td>
-          <td class="p-4">${s.progress || 0}%</td>
-          <td class="p-4">${s.status}</td>
-        </tr>
-      `;
-    });
+            // Randomly change assignment statuses for demo
+            if (dashboardData.assignments.length > 0) {
+                const randomIdx = Math.floor(Math.random() * dashboardData.assignments.length);
+                const randomAssignment = dashboardData.assignments[randomIdx];
+                if (randomAssignment.status === 'pending' && Math.random() > 0.75) {
+                    randomAssignment.status = 'progress';
+                } else if (randomAssignment.status === 'progress' && Math.random() > 0.8) {
+                    randomAssignment.status = 'completed';
+                }
+            }
 
-    onlineCountEl.innerText = online;
-  });
+            // Simulate course progress changes
+            if (dashboardData.courses.length > 0) {
+                const randomCourse = dashboardData.courses[Math.floor(Math.random() * dashboardData.courses.length)];
+                if (randomCourse.progress < 100 && Math.random() > 0.7) {
+                    randomCourse.progress = Math.min(100, randomCourse.progress + Math.floor(Math.random() * 3) + 1);
+                }
+            }
+            
+            // Update community stats in real-time
+            updateCommunityStats();
+        }
 
-  /* ================= COUNTERS ================= */
-  onSnapshot(collection(db, "students"), snap => {
-    document.getElementById("memberCount").innerText = snap.size;
-  });
+        // Load Demo Data
+        function loadDemoData() {
+            dashboardData.courses = [
+                { id: 1, name: 'Web Development 101', instructor: 'Dr. Smith', progress: 75, students: 45 },
+                { id: 2, name: 'Data Science Basics', instructor: 'Prof. Johnson', progress: 60, students: 38 },
+                { id: 3, name: 'UI/UX Design', instructor: 'Ms. Lee', progress: 85, students: 32 },
+                { id: 4, name: 'Machine Learning', instructor: 'Dr. Patel', progress: 50, students: 28 }
+            ];
 
-  onSnapshot(collection(db, "assignments"), snap => {
-    document.getElementById("assignmentCount").innerText = snap.size;
-  });
-</script>
-</script>
- <script type="module">
-    import { auth, db } from "./firebase-config.js";
-    import { onAuthStateChanged } from
-      "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-    import {
-      doc,
-      setDoc,
-      onSnapshot,
-      updateDoc,
-      increment,
-      serverTimestamp
-    } from
-      "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+            dashboardData.assignments = [
+                { id: 1, title: 'Build a Portfolio', course: 'Web Development 101', status: 'completed', dueDate: '2026-01-25' },
+                { id: 2, title: 'Analysis Project', course: 'Data Science Basics', status: 'progress', dueDate: '2026-01-28' },
+                { id: 3, title: 'Wireframing Task', course: 'UI/UX Design', status: 'pending', dueDate: '2026-01-29' },
+                { id: 4, title: 'Model Training', course: 'Machine Learning', status: 'pending', dueDate: '2026-02-02' }
+            ];
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
+            dashboardData.progress = [
+                { course: 'Web Development 101', completed: 6, total: 8, percentage: 75 },
+                { course: 'Data Science Basics', completed: 3, total: 5, percentage: 60 },
+                { course: 'UI/UX Design', completed: 17, total: 20, percentage: 85 },
+                { course: 'Machine Learning', completed: 5, total: 10, percentage: 50 }
+            ];
 
-      const ref = doc(db, "students", user.uid);
+            dashboardData.activities = [
+                { type: 'completion', icon: 'check-circle', color: 'green', title: 'Assignment Completed', description: 'Finished Web Dev Portfolio Project', time: '2 hours ago' },
+                { type: 'submission', icon: 'upload', color: 'blue', title: 'Assignment Submitted', description: 'Data Science Analysis turned in', time: '5 hours ago' },
+                { type: 'start', icon: 'play-circle', color: 'purple', title: 'Started New Module', description: 'Machine Learning - Chapter 5', time: '1 day ago' },
+                { type: 'achievement', icon: 'trophy', color: 'orange', title: 'Achievement Unlocked', description: '100% attendance milestone', time: '2 days ago' }
+            ];
+        }
 
-      // ensure document exists
-      await setDoc(ref, {
-  name: user.displayName || "Unknown User",
-  status: "online",
-  progress: 0,
-  lastLogin: serverTimestamp(),
-  loginCount: increment(1),
-  role: "student"
-}, { merge: true });
+        // Update Dashboard
+        function updateDashboard() {
+            updateIntroStats();
+            renderCourses();
+            renderProgress();
+            renderAssignments();
+            renderDeadlines();
+            renderActivity();
+            renderChart();
+        }
 
+        // Update Intro Stats
+        function updateIntroStats() {
+            const completed = dashboardData.assignments.filter(a => a.status === 'completed').length;
+            const pending = dashboardData.assignments.filter(a => a.status === 'pending').length;
+            
+            document.getElementById('total-courses').textContent = dashboardData.courses.length;
+            document.getElementById('pending-tasks').textContent = pending;
+            document.getElementById('completion-rate').textContent = Math.round((dashboardData.assignments.length > 0 ? (completed / dashboardData.assignments.length) * 100 : 0)) + '%';
+            document.getElementById('gpa-display').textContent = (3.87).toFixed(2);
+        }
 
-      // live updates
-      onSnapshot(ref, snap => {
-        const d = snap.data();
-        if (!d) return;
+        // Render Courses
+        function renderCourses() {
+            const container = document.getElementById('courses-container');
+            const html = dashboardData.courses.map(course => `
+                <div class="p-4 bg-slate-800/40 rounded-lg border border-slate-700/50 hover:border-blue-500/50 transition-all cursor-pointer">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="font-semibold text-white">${course.name}</p>
+                            <p class="text-xs text-slate-400 mt-1">Instructor: ${course.instructor}</p>
+                        </div>
+                        <span class="badge badge-blue">${course.students} students</span>
+                    </div>
+                    <div class="progress-bar mb-2">
+                        <div class="progress-fill" style="width: ${course.progress}%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500">${course.progress}% Complete</p>
+                </div>
+            `).join('');
+            container.innerHTML = html || '<p class="text-slate-400">No courses found</p>';
+        }
 
-        document.getElementById("status").innerText = d.status;
-        document.getElementById("loginCount").innerText = d.loginCount || 0;
-        document.getElementById("progress").innerText = (d.progress || 0) + "%";
-      });
-    });
+        // Render Progress
+        function renderProgress() {
+            const container = document.getElementById('progress-container');
+            const html = dashboardData.progress.map(p => `
+                <div class="p-4 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="font-semibold text-white">${p.course}</p>
+                        <span class="text-sm font-bold text-blue-400">${p.completed}/${p.total}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${p.percentage}%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">${p.percentage}% progress</p>
+                </div>
+            `).join('');
+            container.innerHTML = html;
+        }
 
-    // mark offline
-    window.addEventListener("beforeunload", async () => {
-      if (auth.currentUser) {
-        await updateDoc(
-          doc(db, "students", auth.currentUser.uid),
-          { status: "offline" }
-        );
-      }
-    });
-  </script>
-  <script type="module">
-  import { db } from "./firebase-config.js";
-  import {
-    collection,
-    onSnapshot
-  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+        // Update Assignment Data & Stats
+        function updateAssignmentData() {
+            const completed = dashboardData.assignments.filter(a => a.status === 'completed').length;
+            const progress = dashboardData.assignments.filter(a => a.status === 'progress').length;
+            const pending = dashboardData.assignments.filter(a => a.status === 'pending').length;
+            
+            document.getElementById('completed-count').textContent = completed;
+            document.getElementById('progress-count').textContent = progress;
+            document.getElementById('pending-count').textContent = pending;
+            
+            renderAssignments();
+            renderDeadlines();
+            updateIntroStats();
+        }
 
-  /* ================= COUNT MEMBERS ================= */
-  const memberCountEl = document.getElementById("memberCount");
+        // Render Assignments Table
+        function renderAssignments() {
+            const container = document.getElementById('assignments-table');
+            const html = dashboardData.assignments.map(a => {
+                const statusBadge = `badge-${a.status === 'completed' ? 'green' : a.status === 'progress' ? 'blue' : 'orange'}`;
+                const statusText = a.status.charAt(0).toUpperCase() + a.status.slice(1);
+                const dueDate = new Date(a.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                return `
+                    <tr class="border-b border-slate-700/50 hover:bg-slate-800/20 transition-colors">
+                        <td class="px-4 py-3 text-sm text-white font-semibold">${a.title}</td>
+                        <td class="px-4 py-3 text-sm text-slate-300">${a.course || 'N/A'}</td>
+                        <td class="px-4 py-3 text-sm text-slate-300">${dueDate}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="badge ${statusBadge}">${statusText}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            container.innerHTML = html || '<tr class="border-b border-slate-700/50"><td colspan="4" class="px-4 py-8 text-center text-slate-400">No assignments</td></tr>';
+        }
 
-  const studentsRef = collection(db, "students");
-  onSnapshot(studentsRef, (snapshot) => {
-    memberCountEl.innerText = snapshot.size;
-  });
+        // Render Deadlines
+        function renderDeadlines() {
+            const container = document.getElementById('deadlines-container');
+            const sorted = [...dashboardData.assignments]
+                .filter(a => a.status !== 'completed')
+                .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+                .slice(0, 4);
+            
+            const html = sorted.map(a => {
+                const daysLeft = Math.ceil((new Date(a.dueDate) - new Date()) / (1000 * 60 * 60 * 24));
+                const urgency = daysLeft <= 1 ? 'red' : daysLeft <= 3 ? 'orange' : 'blue';
+                const badgeClass = `badge-${urgency}`;
+                
+                return `
+                    <div class="p-3 bg-${urgency}-500/10 border border-${urgency}-500/30 rounded-lg">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-semibold text-white">${a.title}</p>
+                                <p class="text-xs text-slate-400 mt-1">${a.course || 'N/A'}</p>
+                            </div>
+                            <span class="badge ${badgeClass}">${daysLeft} days</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html || '<p class="text-slate-400 text-xs">All caught up!</p>';
+        }
 
-  /* ================= COUNT ASSIGNMENTS ================= */
-  const assignmentCountEl = document.getElementById("assignmentCount");
+        // Render Activity
+        function renderActivity() {
+            const container = document.getElementById('activity-container');
+            const html = dashboardData.activities.slice(0, 4).map(activity => `
+                <div class="flex gap-3 pb-3 border-b border-slate-700/50 last:border-b-0">
+                    <div class="w-10 h-10 rounded-full bg-${activity.color}-500/20 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-${activity.icon} text-${activity.color}-400 text-sm"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-sm font-semibold text-white">${activity.title}</p>
+                        <p class="text-xs text-slate-400 mt-1">${activity.description}</p>
+                        <p class="text-xs text-slate-500 mt-1">${activity.time}</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
 
-  const assignmentsRef = collection(db, "assignments");
-  onSnapshot(assignmentsRef, (snapshot) => {
-    assignmentCountEl.innerText = snapshot.size;
-  });
-</script>
+        // Render Chart
+        function renderChart() {
+            const chartContainer = document.getElementById('performanceChart');
+            if (!chartContainer) return;
+            
+            if (window.performanceChart) {
+                window.performanceChart.destroy();
+            }
+            
+            const ctx = chartContainer.getContext('2d');
+            window.performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Performance Score',
+                        data: [75, 82, 78, 88, 85, 72, 65],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: '#94a3b8', font: { size: 11 } },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            border: { display: false }
+                        },
+                        x: {
+                            ticks: { color: '#94a3b8', font: { size: 11 } },
+                            grid: { display: false },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+        }
 
+        // Update timestamp for specific section
+        function updateSectionTime(sectionId) {
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const element = document.getElementById(sectionId);
+            if (element) element.textContent = time;
+        }
+
+        // Individual section update functions with independent intervals
+        function updateCoursesSection() {
+            syncWithParent();
+            simulateLiveDataChanges();
+            renderCourses();
+            updateSectionTime('courses-update-time');
+        }
+
+        function updateProgressSection() {
+            syncWithParent();
+            simulateLiveDataChanges();
+            renderProgress();
+            updateIntroStats(); // Recalculate stats when progress updates
+            updateSectionTime('progress-update-time');
+        }
+
+        function updateAssignmentsSection() {
+            syncWithParent();
+            simulateLiveDataChanges();
+            updateAssignmentData();
+            renderAssignments();
+            updateSectionTime('assignments-update-time');
+        }
+
+        function updateSummarySection() {
+            syncWithParent();
+            simulateLiveDataChanges();
+            const completed = dashboardData.assignments.filter(a => a.status === 'completed').length;
+            const progress = dashboardData.assignments.filter(a => a.status === 'progress').length;
+            const pending = dashboardData.assignments.filter(a => a.status === 'pending').length;
+            
+            document.getElementById('completed-count').textContent = completed;
+            document.getElementById('progress-count').textContent = progress;
+            document.getElementById('pending-count').textContent = pending;
+            updateSectionTime('summary-update-time');
+        }
+
+        function updateDeadlinesSection() {
+            syncWithParent();
+            simulateLiveDataChanges();
+            renderDeadlines();
+            updateSectionTime('deadlines-update-time');
+        }
+
+        function updateActivitySection() {
+            syncWithParent();
+            simulateLiveDataChanges();
+            renderActivity();
+            updateSectionTime('activity-update-time');
+        }
+
+        function updateChartSection() {
+            syncWithParent();
+            renderChart();
+            updateSectionTime('chart-update-time');
+        }
+
+        // Update intro stats with live data
+        function updateIntroStatsLive() {
+            const completed = dashboardData.assignments.filter(a => a.status === 'completed').length;
+            const pending = dashboardData.assignments.filter(a => a.status === 'pending').length;
+            const total = dashboardData.assignments.length;
+            
+            document.getElementById('total-courses').textContent = dashboardData.courses.length;
+            document.getElementById('pending-tasks').textContent = pending;
+            document.getElementById('completion-rate').textContent = Math.round((total > 0 ? (completed / total) * 100 : 0)) + '%';
+        }
+
+        // Start individual live updates for each section
+        function startIndividualLiveUpdates() {
+            // Initialize historical data
+            initializeHistoricalData();
+            
+            // Courses: Update every 2 seconds
+            setInterval(() => {
+                updateCoursesSection();
+            }, 2000);
+
+            // Progress: Update every 2.5 seconds
+            setInterval(() => {
+                updateProgressSection();
+            }, 2500);
+
+            // Assignments: Update every 1.5 seconds (fast, reactive)
+            setInterval(() => {
+                updateAssignmentsSection();
+            }, 1500);
+
+            // Summary: Update every 1.5 seconds (fast)
+            setInterval(() => {
+                updateSummarySection();
+            }, 1500);
+
+            // Deadlines: Update every 2 seconds
+            setInterval(() => {
+                updateDeadlinesSection();
+            }, 2000);
+
+            // Activity: Update every 3 seconds
+            setInterval(() => {
+                updateActivitySection();
+            }, 3000);
+
+            // Chart: Update every 4 seconds (slower, less critical)
+            setInterval(() => {
+                updateChartSection();
+            }, 4000);
+
+            // Update intro stats every 2 seconds
+            setInterval(() => {
+                updateIntroStatsLive();
+            }, 2000);
+
+            // Update community stats every 3 seconds (LIVE UPDATES)
+            setInterval(() => {
+                fetchFirebaseStudentMetrics();
+                syncWithParent();
+            }, 3000);
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDate();
+            loadDemoData();
+            updateDashboard();
+            initFirebase();
+            initializeHistoricalData();
+            fetchFirebaseStudentMetrics();
+            startIndividualLiveUpdates();
+            
+            setTimeout(() => {
+                syncWithParent();
+            }, 500);
+        });
+
+        // Continuous sync and live updates
+        window.addEventListener('load', () => {
+            loadDemoData();
+            updateDashboard();
+            updateIntroStatsLive();
+            initializeHistoricalData();
+            fetchFirebaseStudentMetrics();
+            startIndividualLiveUpdates();
+            syncWithParent();
+        });
+    </script>
 </body>
 </html>

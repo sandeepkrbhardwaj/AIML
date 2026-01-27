@@ -694,13 +694,9 @@
 
         <!-- VIEW: REPORTS -->
         <div id="view-report" class="hidden fade-in native-view-container space-y-6">
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold text-white">My Live Analytics</h2>
-                <p id="user-analytics-id" class="text-slate-400 text-sm mt-1">Loading your unique dashboard...</p>
-            </div>
+            <h2 class="text-2xl font-bold text-white">My Live Analytics</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Task Completion Chart -->
                 <div class="card-dark p-6 rounded-xl shadow-sm">
                     <h3 class="font-bold text-slate-200 mb-4">My Task Completion (Real-time)</h3>
                     <div class="h-64 flex justify-center relative">
@@ -709,50 +705,9 @@
                     </div>
                 </div>
                 
-                <!-- Live Activity Graph (Lighting Effect) -->
                 <div class="card-dark p-6 rounded-xl shadow-sm">
-                    <h3 class="font-bold text-slate-200 mb-4">Real-time Activity Feed <span class="text-xs text-green-400 animate-pulse">(Live)</span></h3>
-                    <div class="h-64 flex justify-center">
-                        <canvas id="activityLightingChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- User Activity Timeline -->
-                <div class="card-dark p-6 rounded-xl shadow-sm">
-                    <h3 class="font-bold text-slate-200 mb-4">Your Activity Timeline (24 Hours)</h3>
-                    <div class="h-64 flex justify-center">
-                        <canvas id="userActivityChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Task Progress Chart -->
-                <div class="card-dark p-6 rounded-xl shadow-sm">
-                    <h3 class="font-bold text-slate-200 mb-4">Your Assigned Tasks Progress</h3>
-                    <div class="h-64 flex justify-center">
-                        <canvas id="userTaskProgressChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- User-Specific Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="card-dark p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
-                    <p class="text-slate-400 text-sm">Total Tasks</p>
-                    <p id="stat-total-tasks" class="text-2xl font-bold text-blue-400 mt-2">0</p>
-                </div>
-                <div class="card-dark p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
-                    <p class="text-slate-400 text-sm">Completed</p>
-                    <p id="stat-completed-tasks" class="text-2xl font-bold text-emerald-400 mt-2">0</p>
-                </div>
-                <div class="card-dark p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
-                    <p class="text-slate-400 text-sm">In Progress</p>
-                    <p id="stat-pending-tasks" class="text-2xl font-bold text-amber-400 mt-2">0</p>
-                </div>
-                <div class="card-dark p-4 rounded-xl shadow-sm border-l-4 border-purple-500">
-                    <p class="text-slate-400 text-sm">Feedback Sent</p>
-                    <p id="stat-feedback-count" class="text-2xl font-bold text-purple-400 mt-2">0</p>
+                    <h3 class="font-bold text-slate-200 mb-4">My Activity Heatmap (Last 7 Days)</h3>
+                    <canvas id="participationChart"></canvas>
                 </div>
             </div>
         </div>
@@ -1321,11 +1276,7 @@
                     allResources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     allResources.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                     this.renderResources();
-                    this.renderCharts(); // Real-time update of charts
                 }, permissionError);
-
-                // Start live analytics updates
-                this.startLiveAnalytics();
             },
 
             // --- PROFILE LOGIC (STRICTLY PRIVATE) ---
@@ -1592,39 +1543,18 @@
                 
                 const sortedChats = [...allChats].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 
-                container.innerHTML = sortedChats.map(c => {
-                    const isOwner = c.createdBy === currentUsername;
-                    const deleteBtn = isOwner ? `<button onclick="window.app.deleteChat('${c.id}')" class="text-red-500 hover:text-red-600 text-xs ml-2" title="Delete"><i class="fa-solid fa-trash"></i></button>` : '';
-                    return `
-                    <div class="flex flex-col ${c.user === currentUsername ? 'items-end' : 'items-start'} group">
-                        <div class="bg-white border ${c.user === currentUsername ? 'bg-blue-50 border-blue-200' : 'border-slate-200'} px-4 py-2 rounded-lg shadow-sm max-w-md flex items-start gap-2">
-                            <div>
-                                <div class="text-xs font-bold ${c.user === currentUsername ? 'text-blue-600' : 'text-slate-600'} mb-1">${escapeHtml(c.user)}</div>
-                                <div class="text-sm text-slate-700">${escapeHtml(c.message)}</div>
-                            </div>
-                            ${deleteBtn}
+                container.innerHTML = sortedChats.map(c => `
+                    <div class="flex flex-col ${c.user === currentUsername ? 'items-end' : 'items-start'}">
+                        <div class="bg-white border ${c.user === currentUsername ? 'bg-blue-50 border-blue-200' : 'border-slate-200'} px-4 py-2 rounded-lg shadow-sm max-w-md">
+                            <div class="text-xs font-bold ${c.user === currentUsername ? 'text-blue-600' : 'text-slate-600'} mb-1">${escapeHtml(c.user)}</div>
+                            <div class="text-sm text-slate-700">${escapeHtml(c.message)}</div>
                         </div>
                         <div class="text-[10px] text-slate-400 mt-1 mb-2">${new Date(c.timestamp).toLocaleTimeString()}</div>
                     </div>
-                `}).join('');
+                `).join('');
                 container.scrollTop = container.scrollHeight;
             },
             
-            async deleteChat(id) {
-                const chat = allChats.find(c => c.id === id);
-                if (!chat) return;
-                if (chat.createdBy !== currentUsername) {
-                    this.showNotification("You can only delete your own messages", "error");
-                    return;
-                }
-                if(confirm("Delete this message?")) {
-                    try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'chats', id));
-                        this.showNotification("Message deleted", "success");
-                    } catch(err) { console.error(err); }
-                }
-            },
-
             renderChatStream() {
                 const container = document.getElementById('class-chat-stream');
                 if(container) {
@@ -1710,9 +1640,7 @@
                     content: f.content.value.trim(),
                     type: type,
                     media: mediaContent,
-                    timestamp: new Date().toISOString(),
-                    createdBy: currentUsername || 'Anonymous',
-                    createdByUid: currentUser?.uid || 'guest'
+                    timestamp: new Date().toISOString()
                 };
 
                 try {
@@ -1742,20 +1670,16 @@
                     } else if (note.type === 'pdf' && note.media) {
                          mediaHtml = `<div class="mt-3"><a href="${note.media}" download="note_attachment.pdf" class="flex items-center gap-2 text-red-400 bg-red-900/20 p-2 rounded-lg text-sm hover:bg-red-900/40"><i class="fa-solid fa-file-pdf"></i> Download Attached PDF</a></div>`;
                     }
-                    
-                    const isOwner = note.createdBy === currentUsername;
-                    const deleteBtn = isOwner ? `<button onclick="window.app.deleteNote('${note.id}')" class="absolute top-2 right-2 text-red-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete"><i class="fa-solid fa-trash"></i></button>` : '';
 
                     return `
                         <div class="card-dark p-6 rounded-xl relative group shadow-sm hover:shadow-md transition-shadow">
-                            ${deleteBtn}
+                            <button onclick="window.app.deleteNote('${note.id}')" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
                             <p class="text-slate-200 font-medium">${escapeHtml(note.content)}</p>
                             ${mediaHtml}
-                            <div class="mt-4 text-xs text-slate-500 flex justify-between items-center border-t pt-2 border-slate-700">
-                                <div>
-                                    <span>${new Date(note.timestamp).toLocaleDateString()}</span>
-                                    <span class="ml-2 text-slate-600">by ${escapeHtml(note.createdBy || 'Unknown')}</span>
-                                </div>
+                            <div class="mt-4 text-xs text-slate-500 flex justify-between items-end border-t pt-2 border-slate-700">
+                                <span>${new Date(note.timestamp).toLocaleDateString()}</span>
                                 <span class="uppercase font-bold text-[10px] tracking-wider bg-slate-700 text-slate-300 px-2 py-1 rounded">${note.type}</span>
                             </div>
                         </div>
@@ -1764,16 +1688,9 @@
             },
 
             async deleteNote(id) {
-                const note = allNotes.find(n => n.id === id);
-                if (!note) return;
-                if (note.createdBy !== currentUsername) {
-                    this.showNotification("You can only delete your own notes", "error");
-                    return;
-                }
                 if(confirm("Delete this note?")) {
                     try {
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notes', id));
-                        this.showNotification("Note deleted", "success");
                     } catch(err) { console.error(err); }
                 }
             },
@@ -1786,10 +1703,7 @@
                     return;
                 }
                 const icons = { 'article': 'fa-newspaper text-blue-500', 'video': 'fa-play-circle text-red-500', 'book': 'fa-book text-emerald-500', 'file': 'fa-file-arrow-down text-slate-400' };
-                container.innerHTML = allResources.map(res => {
-                    const isOwner = res.createdBy === currentUsername;
-                    const deleteBtn = isOwner ? `<button onclick="window.app.deleteResource('${res.id}')" class="text-red-500 hover:text-red-600 transition-colors ml-2" title="Delete"><i class="fa-solid fa-trash"></i></button>` : '';
-                    return `
+                container.innerHTML = allResources.map(res => `
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-blue-300 transition-colors">
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-xl">
@@ -1804,14 +1718,11 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <a href="${escapeHtml(res.url)}" target="_blank" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors">
-                                <i class="fa-solid fa-external-link-alt"></i>
-                            </a>
-                            ${deleteBtn}
-                        </div>
+                        <a href="${escapeHtml(res.url)}" target="_blank" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                            <i class="fa-solid fa-external-link-alt"></i>
+                        </a>
                     </div>
-                `}).join('');
+                `).join('');
             },
 
             renderFeedbackStream() {
@@ -1821,41 +1732,16 @@
                     container.innerHTML = `<div class="text-center text-slate-500 py-4">No feedback submitted yet.</div>`;
                     return;
                 }
-                container.innerHTML = allFeedbacks.map(fb => {
-                    const canDelete = fb.name === currentUsername || currentUser?.email === fb.email;
-                    const deleteBtn = canDelete ? `<button onclick="event.stopPropagation(); window.app.deleteFeedback('${fb.id}')" class="text-red-500 hover:text-red-600 text-xs" title="Delete"><i class="fa-solid fa-trash"></i></button>` : '';
-                    return `
+                container.innerHTML = allFeedbacks.map(fb => `
                     <div class="card-dark p-4 rounded-xl shadow-sm fade-in border border-slate-700">
-                        <div class="flex justify-between items-start mb-2">
+                        <div class="flex justify-between mb-2">
                             <span class="font-bold text-slate-200 text-sm">${escapeHtml(fb.name)}</span>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs text-slate-500">${new Date(fb.timestamp).toLocaleDateString()}</span>
-                                ${deleteBtn}
-                            </div>
+                            <span class="text-xs text-slate-500">${new Date(fb.timestamp).toLocaleDateString()}</span>
                         </div>
                         <div class="text-xs font-semibold text-blue-400 mb-1 uppercase">${escapeHtml(fb.category)}</div>
                         <p class="text-slate-400 text-sm">${escapeHtml(fb.message)}</p>
                     </div>
-                `;}).join('');
-            },
-
-            async deleteFeedback(id) {
-                const feedback = allFeedbacks.find(f => f.id === id);
-                if (!feedback) return;
-                const canDelete = feedback.name === currentUsername || currentUser?.email === feedback.email;
-                if (!canDelete) {
-                    this.showNotification("You can only delete your own feedback", "error");
-                    return;
-                }
-                if(confirm("Delete this feedback?")) {
-                    try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', id));
-                        this.showNotification("Feedback deleted", "success");
-                    } catch(err) { 
-                        console.error(err);
-                        this.showNotification("Error deleting feedback", "error");
-                    }
-                }
+                `).join('');
             },
 
             createTaskCard(task, isPersonal) {
@@ -1863,9 +1749,6 @@
                 const btnColor = task.status === 'completed' ? 'text-emerald-500' : 'text-slate-600 hover:text-blue-400';
                 const bgColor = 'bg-slate-800 hover:bg-slate-700'; // Dark mode card bg
                 const titleColor = task.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-200';
-                
-                const isOwner = task.createdBy === currentUsername;
-                const deleteBtn = isOwner ? `<button onclick="event.stopPropagation(); window.app.deleteTask('${task.id}')" class="text-red-500 hover:text-red-600 ml-2" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>` : '';
                 
                 return `
                 <div class="p-4 ${bgColor} transition-all flex items-start gap-4 border-l-4 ${statusColor} ${isPersonal ? 'shadow-sm rounded-lg mb-2 border border-slate-700' : ''}">
@@ -1875,34 +1758,15 @@
                     <div class="flex-grow">
                         <div class="flex justify-between items-start">
                             <h4 class="font-bold ${titleColor}">${escapeHtml(task.title)}</h4>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-900 text-slate-400 uppercase border border-slate-700">${task.status}</span>
-                                ${deleteBtn}
-                            </div>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-900 text-slate-400 uppercase border border-slate-700">${task.status}</span>
                         </div>
                         <p class="text-sm text-slate-400 mt-1 line-clamp-2">${escapeHtml(task.description)}</p>
                         <div class="flex items-center gap-4 mt-3 text-xs text-slate-500">
                             <span><i class="fa-solid fa-user mr-1"></i> ${escapeHtml(task.assignee)}</span>
                             <span><i class="fa-solid fa-calendar mr-1"></i> ${task.dueDate}</span>
-                            <span class="ml-auto text-slate-600">by ${escapeHtml(task.createdBy || 'Unknown')}</span>
                         </div>
                     </div>
                 </div>`;
-            },
-
-            async deleteTask(id) {
-                const task = allTasks.find(t => t.id === id);
-                if (!task) return;
-                if (task.createdBy !== currentUsername) {
-                    this.showNotification("You can only delete your own tasks", "error");
-                    return;
-                }
-                if(confirm("Delete this task?")) {
-                    try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', id));
-                        this.showNotification("Task deleted", "success");
-                    } catch(err) { console.error(err); }
-                }
             },
 
             async handleCreateTask(e) {
@@ -1915,9 +1779,7 @@
                     assignee: formData.get('assignee'),
                     dueDate: formData.get('dueDate'),
                     status: 'pending',
-                    createdAt: new Date().toISOString(),
-                    createdBy: currentUsername || 'Anonymous',
-                    createdByUid: currentUser?.uid || 'guest'
+                    createdAt: new Date().toISOString()
                 };
 
                 try {
@@ -1925,21 +1787,6 @@
                     this.showNotification("Task Assigned Successfully", "success");
                     form.reset();
                 } catch(err) { console.error(err); }
-            },
-
-            async deleteResource(id) {
-                const resource = allResources.find(r => r.id === id);
-                if (!resource) return;
-                if (resource.createdBy !== currentUsername) {
-                    this.showNotification("You can only delete your own resources", "error");
-                    return;
-                }
-                if(confirm("Delete this resource?")) {
-                    try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', id));
-                        this.showNotification("Resource deleted", "success");
-                    } catch(err) { console.error(err); }
-                }
             },
 
             async handleAddResource(e) {
@@ -1950,8 +1797,6 @@
                     url: f.url.value,
                     type: f.type.value,
                     sharedBy: currentUsername,
-                    createdBy: currentUsername || 'Anonymous',
-                    createdByUid: currentUser?.uid || 'guest',
                     timestamp: new Date().toISOString()
                 };
                 
@@ -1978,10 +1823,7 @@
                     name: formData.get('name') || 'Anonymous',
                     category: formData.get('category'),
                     message: formData.get('message'),
-                    timestamp: new Date().toISOString(),
-                    createdBy: currentUsername || 'Anonymous',
-                    email: currentUser?.email || null,
-                    uid: currentUser?.uid || null
+                    timestamp: new Date().toISOString()
                 };
 
                 try {
@@ -2075,38 +1917,23 @@
                 const input = e.target.message;
                 const msg = input.value.trim();
                 if (!msg) return;
-                const chatMsg = { 
-                    user: currentUsername, 
-                    message: msg, 
-                    timestamp: new Date().toISOString(),
-                    createdBy: currentUsername || 'Anonymous',
-                    createdByUid: currentUser?.uid || 'guest'
-                };
+                const chatMsg = { user: currentUsername, message: msg, timestamp: new Date().toISOString() };
                 try {
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chats'), chatMsg);
                     input.value = '';
                 } catch(err) { console.error(err); }
             },
 
-            // --- REPORTS - USER-SPECIFIC LIVE ANALYTICS ---
+            // --- REPORTS ---
             renderCharts() {
                 const ctxStatus = document.getElementById('statusChart');
-                const ctxActivityLighting = document.getElementById('activityLightingChart');
-                const ctxUserActivity = document.getElementById('userActivityChart');
-                const ctxUserTaskProgress = document.getElementById('userTaskProgressChart');
-                
-                if(!ctxStatus) return;
-
-                // Update user identifier
-                const userIdEl = document.getElementById('user-analytics-id');
-                if(userIdEl) userIdEl.textContent = `Your Analytics • ${currentUsername || 'Guest User'}`;
+                const ctxPart = document.getElementById('participationChart');
+                if(!ctxStatus || !ctxPart) return;
 
                 const userTasks = allTasks.filter(t => t.assignee && t.assignee.toLowerCase().includes(currentUsername.toLowerCase()));
-                const userFeedbacks = allFeedbacks.filter(f => f.createdBy === currentUsername);
                 const completed = userTasks.filter(t => t.status === 'completed').length;
                 const pending = userTasks.length - completed;
 
-                // === 1. TASK COMPLETION PIE CHART (USER-SPECIFIC) ===
                 if(window.statusChartInstance) window.statusChartInstance.destroy();
                 
                 const noData = document.getElementById('chart-no-data');
@@ -2118,201 +1945,29 @@
                         type: 'doughnut',
                         data: {
                             labels: ['Completed', 'Pending'],
-                            datasets: [{ 
-                                data: [completed, pending], 
-                                backgroundColor: ['#10b981', '#f59e0b'],
-                                borderColor: ['#059669', '#d97706'],
-                                borderWidth: 2
-                            }]
+                            datasets: [{ data: [completed, pending], backgroundColor: ['#10b981', '#f59e0b'] }]
                         },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            plugins: { 
-                                legend: { labels: { color: '#cbd5e1', font: { size: 12, weight: 'bold' } } } 
-                            } 
-                        }
+                        options: { responsive: true, maintainAspectRatio: false }
                     });
                 }
 
-                // === 2. REAL-TIME ACTIVITY LIGHTING CHART ===
-                if(ctxActivityLighting) {
-                    const now = new Date();
-                    const last24Hours = Array.from({length: 24}, (_, i) => {
-                        const d = new Date(now);
-                        d.setHours(d.getHours() - (23 - i));
-                        return d.toISOString().slice(11, 13) + ':00';
-                    });
-                    
-                    // Count user activities by hour
-                    const activityCounts = Array.from({length: 24}, (_, i) => {
-                        const targetHour = new Date(now);
-                        targetHour.setHours(targetHour.getHours() - (23 - i));
-                        const hourStart = new Date(targetHour).setMinutes(0, 0, 0);
-                        const hourEnd = hourStart + 3600000;
-                        
-                        const taskCount = userTasks.filter(t => {
-                            const t_time = new Date(t.createdAt).getTime();
-                            return t_time >= hourStart && t_time < hourEnd;
-                        }).length;
-                        
-                        const feedbackCount = userFeedbacks.filter(f => {
-                            const f_time = new Date(f.timestamp).getTime();
-                            return f_time >= hourStart && f_time < hourEnd;
-                        }).length;
-                        
-                        return taskCount + feedbackCount;
-                    });
-
-                    if(window.activityLightingChart) window.activityLightingChart.destroy();
-                    window.activityLightingChart = new Chart(ctxActivityLighting, {
-                        type: 'line',
-                        data: {
-                            labels: last24Hours,
-                            datasets: [{
-                                label: 'Your Activity (Tasks + Feedback)',
-                                data: activityCounts,
-                                borderColor: '#06b6d4',
-                                backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.4,
-                                pointRadius: 5,
-                                pointBackgroundColor: '#06b6d4',
-                                pointBorderColor: '#0e7490',
-                                pointBorderWidth: 2,
-                                pointHoverRadius: 7
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { labels: { color: '#cbd5e1', font: { weight: 'bold' } } }
-                            },
-                            scales: {
-                                y: { 
-                                    beginAtZero: true,
-                                    ticks: { color: '#cbd5e1' },
-                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
-                                },
-                                x: { 
-                                    ticks: { color: '#cbd5e1' },
-                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
-                                }
-                            }
-                        }
-                    });
-                }
-
-                // === 3. USER ACTIVITY TIMELINE (24 HOURS) ===
-                if(ctxUserActivity) {
-                    const last24h = Array.from({length: 24}, (_, i) => {
-                        const d = new Date();
-                        d.setHours(d.getHours() - (23 - i));
-                        return d.getHours() + ':00';
-                    });
-
-                    const tasksByHour = Array.from({length: 24}, (_, i) => {
-                        const targetHour = new Date();
-                        targetHour.setHours(targetHour.getHours() - (23 - i));
-                        const hourStart = new Date(targetHour).setMinutes(0, 0, 0);
-                        const hourEnd = hourStart + 3600000;
-                        return userTasks.filter(t => {
-                            const t_time = new Date(t.createdAt).getTime();
-                            return t_time >= hourStart && t_time < hourEnd;
-                        }).length;
-                    });
-
-                    if(window.userActivityChart) window.userActivityChart.destroy();
-                    window.userActivityChart = new Chart(ctxUserActivity, {
-                        type: 'bar',
-                        data: {
-                            labels: last24h,
-                            datasets: [{
-                                label: 'Tasks Created/Modified',
-                                data: tasksByHour,
-                                backgroundColor: '#3b82f6',
-                                borderColor: '#1e40af',
-                                borderWidth: 1,
-                                borderRadius: 4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { labels: { color: '#cbd5e1' } } },
-                            scales: {
-                                y: { 
-                                    beginAtZero: true,
-                                    ticks: { color: '#cbd5e1' },
-                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
-                                },
-                                x: { 
-                                    ticks: { color: '#cbd5e1' },
-                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
-                                }
-                            }
-                        }
-                    });
-                }
-
-                // === 4. USER TASK PROGRESS CHART ===
-                if(ctxUserTaskProgress) {
-                    const allStats = {
-                        completed: completed,
-                        pending: pending,
-                        total: userTasks.length
-                    };
-
-                    if(window.userTaskProgressChart) window.userTaskProgressChart.destroy();
-                    window.userTaskProgressChart = new Chart(ctxUserTaskProgress, {
-                        type: 'radar',
-                        data: {
-                            labels: ['Completed', 'In Progress', 'Total Assigned'],
-                            datasets: [{
-                                label: 'Your Task Status',
-                                data: [completed, pending, userTasks.length],
-                                borderColor: '#8b5cf6',
-                                backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                                borderWidth: 2,
-                                pointRadius: 5,
-                                pointBackgroundColor: '#8b5cf6',
-                                pointBorderColor: '#6d28d9',
-                                pointBorderWidth: 2
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { labels: { color: '#cbd5e1' } } },
-                            scales: {
-                                r: {
-                                    ticks: { color: '#cbd5e1' },
-                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
-                                }
-                            }
-                        }
-                    });
-                }
-
-                // === UPDATE USER-SPECIFIC STATS ===
-                const statTotalTasks = document.getElementById('stat-total-tasks');
-                const statCompletedTasks = document.getElementById('stat-completed-tasks');
-                const statPendingTasks = document.getElementById('stat-pending-tasks');
-                const statFeedbackCount = document.getElementById('stat-feedback-count');
-
-                if(statTotalTasks) statTotalTasks.textContent = userTasks.length;
-                if(statCompletedTasks) statCompletedTasks.textContent = completed;
-                if(statPendingTasks) statPendingTasks.textContent = pending;
-                if(statFeedbackCount) statFeedbackCount.textContent = userFeedbacks.length;
-            },
-
-            // Auto-update analytics every 2 seconds for real-time Firebase updates
-            startLiveAnalytics() {
-                setInterval(() => {
-                    this.renderCharts();
-                }, 2000);
+                const last7Days = Array.from({length: 7}, (_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    return d.toISOString().split('T')[0];
+                }).reverse();
+                
+                const counts = last7Days.map(date => userTasks.filter(t => t.createdAt && t.createdAt.startsWith(date)).length);
+                
+                if(window.partChartInstance) window.partChartInstance.destroy();
+                window.partChartInstance = new Chart(ctxPart, {
+                    type: 'bar',
+                    data: {
+                        labels: last7Days.map(d => d.slice(5)), 
+                        datasets: [{ label: 'Tasks Assigned to Me', data: counts, backgroundColor: '#3b82f6' }]
+                    },
+                    options: { responsive: true }
+                });
             },
 
             showLoginSuccessPopup(username) {
