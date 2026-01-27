@@ -1235,7 +1235,7 @@
                     mediaContent = f.mediaUrl.value;
                 } else if ((type === 'image' || type === 'pdf') && f.mediaFile.files[0]) {
                     const file = f.mediaFile.files[0];
-                    if (file.size > 10000000) { 
+                    if (file.size > 8000000) { 
                         this.showNotification("File too large (Max 100000kb for sync)", "error");
                         return;
                     }
