@@ -3,201 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskAssigner - Team View</title>
+    <title>TaskAssigner Pro - Team Workspace</title>
     
-    <!-- Optimize Connections -->
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
-    <link rel="preconnect" href="https://unpkg.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://www.gstatic.com">
-    <link rel="preconnect" href="https://firestore.googleapis.com">
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
     
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Google Fonts (Inter) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* Iframe Optimization: Ensure height and no horizontal scroll */
-        html, body { 
-            font-family: 'Inter', sans-serif; 
-            overflow-x: hidden;
-            height: 100%;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); }
         .loader {
-            border: 3px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 3px solid #3b82f6;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 2px solid #ffffff;
+            width: 16px; height: 16px; animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        /* Skeleton Animation */
-        .skeleton {
-            background: #e2e8f0;
-            background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: 0.5rem;
-        }
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Smooth hiding/showing */
+        #app-content { transition: opacity 0.5s ease; }
+        .hidden-app { opacity: 0; pointer-events: none; position: absolute; width: 100%; }
+        .visible-app { opacity: 1; pointer-events: auto; position: relative; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 flex flex-col">
+<body class="text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 min-h-screen flex flex-col">
 
-    <!-- Navbar -->
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-10 px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between shadow-sm flex-none">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-white">
-                <i data-lucide="clipboard-list" width="20" height="20"></i>
-            </div>
-            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent truncate">
-                TaskAssigner <span class="hidden xs:inline text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full ml-2 align-middle">Team View</span>
-            </h1>
-        </div>
-        <div class="flex items-center gap-4 text-sm text-slate-500">
-            <span class="hidden md:inline">
-                Logged in as <span id="user-display" class="font-mono text-xs bg-slate-100 px-2 py-1 rounded">...</span>
-            </span>
-            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
-                <i data-lucide="user" width="16" height="16" class="text-slate-600"></i>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 flex-grow w-full">
-        
-        <!-- Creation Card -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                <i data-lucide="plus" class="w-5 h-5 text-blue-500"></i>
-                New Team Assignment
-            </h2>
-            <form id="add-task-form" class="flex flex-col xl:flex-row gap-4">
-                <!-- Task Description -->
-                <div class="flex-[2] space-y-1">
-                    <label for="taskName" class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Task</label>
-                    <input
-                        id="taskName"
-                        type="text"
-                        placeholder="What needs to be done?"
-                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-                        required
-                    />
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity duration-500">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all scale-100 mx-4">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="lock" width="32" height="32"></i>
                 </div>
-                
-                <!-- Assigned To -->
-                <div class="flex-1 space-y-1">
-                    <label for="assigneeName" class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Assigned To</label>
-                    <div class="relative">
-                        <i data-lucide="user" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
-                        <input
-                            id="assigneeName"
-                            type="text"
-                            placeholder="Receiver's Name"
-                            class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-                            required
-                        />
-                    </div>
-                </div>
-
-                <!-- Assigned By -->
-                <div class="flex-1 space-y-1">
-                    <label for="creatorName" class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Assigned By</label>
-                    <div class="relative">
-                        <i data-lucide="user-plus" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
-                        <input
-                            id="creatorName"
-                            type="text"
-                            placeholder="Your Name"
-                            class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-                            required
-                        />
-                    </div>
-                </div>
-
-                <div class="flex items-end">
-                    <button
-                        type="submit"
-                        id="submit-btn"
-                        disabled
-                        class="w-full xl:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
-                    >
-                        <span>Loading...</span>
-                    </button>
-                </div>
-            </form>
-        </section>
-
-        <!-- Filters & Stats -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm w-fit overflow-x-auto max-w-full">
-                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-slate-100 text-slate-900 whitespace-nowrap">
-                    All Tasks
-                </button>
-                <button onclick="setFilter('pending')" id="filter-pending" class="filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-slate-700 whitespace-nowrap">
-                    Pending
-                </button>
-                <button onclick="setFilter('completed')" id="filter-completed" class="filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-slate-700 whitespace-nowrap">
-                    Done
-                </button>
+                <h2 class="text-2xl font-bold text-slate-800">Team Workspace</h2>
+                <p class="text-slate-500 mt-2 text-sm">Join the public board to assign and track tasks.</p>
             </div>
             
-            <div id="stats-display" class="text-sm text-slate-500 font-medium whitespace-nowrap">
-                <!-- Populated by JS -->
-            </div>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Your Name</label>
+                    <input type="text" id="display-name-input" placeholder="e.g. John Doe" required
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all">
+                </div>
+                <button type="submit" id="login-btn"
+                    class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg shadow-indigo-500/30 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    Enter Workspace <i data-lucide="arrow-right" width="18"></i>
+                </button>
+            </form>
         </div>
+    </div>
 
-        <!-- Task Grid (Initially showing Skeletons) -->
-        <div id="task-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8">
-            <!-- Skeleton Items (Displayed while loading) -->
-            <div class="skeleton-item bg-white rounded-2xl p-5 border border-slate-200 shadow-sm h-48 flex flex-col justify-between">
-                <div>
-                    <div class="flex justify-between mb-4"><div class="skeleton w-20 h-6"></div><div class="skeleton w-6 h-6 rounded"></div></div>
-                    <div class="skeleton w-3/4 h-6 mb-2"></div>
-                    <div class="skeleton w-1/2 h-4 mb-6"></div>
+    <div id="app-content" class="hidden-app flex flex-col min-h-screen">
+        
+        <nav class="glass sticky top-0 z-40 border-b border-slate-200/60 h-16">
+            <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 p-1.5 rounded-lg shadow-lg shadow-indigo-500/20">
+                        <i data-lucide="layers" class="text-white" width="20"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-slate-800 leading-none">TaskAssigner</h1>
+                        <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Public Board</span>
+                    </div>
                 </div>
-                <div class="skeleton w-full h-10 rounded-xl"></div>
-            </div>
-            <div class="skeleton-item bg-white rounded-2xl p-5 border border-slate-200 shadow-sm h-48 flex flex-col justify-between hidden md:flex">
-                <div>
-                    <div class="flex justify-between mb-4"><div class="skeleton w-20 h-6"></div><div class="skeleton w-6 h-6 rounded"></div></div>
-                    <div class="skeleton w-3/4 h-6 mb-2"></div>
-                    <div class="skeleton w-1/2 h-4 mb-6"></div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:flex flex-col items-end">
+                        <span class="text-[10px] font-bold text-emerald-600 uppercase flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live Sync
+                        </span>
+                        <span id="current-user-name" class="text-xs font-medium text-slate-600">Guest</span>
+                    </div>
+                    <button onclick="handleLogout()" class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all" title="Sign Out">
+                        <i data-lucide="log-out" width="18"></i>
+                    </button>
                 </div>
-                <div class="skeleton w-full h-10 rounded-xl"></div>
             </div>
-            <div class="skeleton-item bg-white rounded-2xl p-5 border border-slate-200 shadow-sm h-48 flex flex-col justify-between hidden lg:flex">
-                <div>
-                    <div class="flex justify-between mb-4"><div class="skeleton w-20 h-6"></div><div class="skeleton w-6 h-6 rounded"></div></div>
-                    <div class="skeleton w-3/4 h-6 mb-2"></div>
-                    <div class="skeleton w-1/2 h-4 mb-6"></div>
-                </div>
-                <div class="skeleton w-full h-10 rounded-xl"></div>
-            </div>
-        </div>
+        </nav>
 
-    </main>
+        <main class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-6">
+            
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in">
+                <div class="relative w-full md:w-72">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4"></i>
+                    <input type="text" id="search-input" onkeyup="filterTasks()" placeholder="Search tasks..." 
+                        class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:outline-none">
+                </div>
+                
+                <div class="flex gap-2">
+                    <button onclick="setFilter('all')" id="filter-all" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-indigo-100 text-indigo-700">All</button>
+                    <button onclick="setFilter('mine')" id="filter-mine" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:bg-slate-100">My Tasks</button>
+                </div>
+            </div>
 
-    <!-- Logic: Using Firebase Modular SDK v12.7.0 -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-slide-up">
+                <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-500"></i> New Assignment
+                    </h2>
+                </div>
+                
+                <form id="add-task-form" class="p-5 grid gap-4 grid-cols-1 md:grid-cols-12">
+                    <div class="md:col-span-4 space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Task Title</label>
+                        <input id="taskTitle" type="text" placeholder="What needs to be done?" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:outline-none">
+                    </div>
+                    
+                    <div class="md:col-span-3 space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Assign To</label>
+                        <input id="taskAssignee" type="text" placeholder="Name of person" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:outline-none">
+                    </div>
+
+                    <div class="md:col-span-2 space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Priority</label>
+                        <select id="taskPriority" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none cursor-pointer">
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-3 flex items-end">
+                        <button type="submit" id="submit-btn" disabled
+                            class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white text-sm font-semibold rounded-lg shadow-md transition-all flex items-center justify-center gap-2">
+                            <span class="loader hidden"></span> <span class="btn-text">Connect First</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <div id="task-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pb-10">
+                <div class="col-span-full text-center py-12 text-slate-400 flex flex-col items-center">
+                    <div class="loader border-slate-300 border-t-indigo-500 w-8 h-8 mb-2"></div>
+                    <p class="text-sm">Syncing Public Database...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- 1. CONFIGURATION ---
+        // --- Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyByNguF8LnWae1tehQFT3f0TGRsRtst-lk",
             authDomain: "aiml-59e44.firebaseapp.com",
@@ -206,325 +173,271 @@
             messagingSenderId: "495020918333",
             appId: "1:495020918333:web:c6ed2308e89ad15d1f0c54"
         };
-        
-        // --- APP ID for Security Rules ---
-        // Must match the hierarchy: /artifacts/{APP_ID}/public/data/tasks
-        const APP_ID = "task-assigner-app";
 
-        // --- 2. ADMIN SETUP (FOR RESTRICTED DELETION) ---
-        // Instructions:
-        // 1. Run the app in VS Code (Live Server).
-        // 2. Open Developer Tools (F12) -> Console.
-        // 3. Look for "YOUR UID IS: ..."
-        // 4. Copy that long string and paste it inside the quotes below.
-        // 5. Only the user with this UID will see the Delete button.
-        const ADMIN_UID = "REPLACE_THIS_WITH_YOUR_UID_FROM_CONSOLE"; 
-
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const COLLECTION_PATH = "artifacts/task-assigner-pro/public/data/tasks"; // Shared path
 
         // --- State ---
         let currentUser = null;
+        let displayName = localStorage.getItem('taskApp_userName') || '';
         let tasks = [];
         let currentFilter = 'all';
-        let isSubmitting = false;
-        let hasLoadedOnce = false;
 
         // --- DOM Elements ---
-        const form = document.getElementById('add-task-form');
-        const taskGrid = document.getElementById('task-grid');
-        const userDisplay = document.getElementById('user-display');
-        const statsDisplay = document.getElementById('stats-display');
+        const modal = document.getElementById('auth-modal');
+        const loginForm = document.getElementById('login-form');
+        const appContent = document.getElementById('app-content');
+        const displayNameInput = document.getElementById('display-name-input');
         const submitBtn = document.getElementById('submit-btn');
+        const taskGrid = document.getElementById('task-grid');
 
-        // --- Authentication ---
-        async function initAuth() {
-            try {
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Auth initialization error:", error);
-                submitBtn.innerText = "Auth Error";
-                submitBtn.classList.add('bg-red-500');
-            }
+        // --- 1. Login Logic ---
+        // Check if previously logged in
+        if (displayName) {
+            initApp();
+        } else {
+            modal.classList.remove('opacity-0', 'pointer-events-none');
         }
 
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                console.log("YOUR UID IS:", user.uid); // <--- COPY THIS UID FOR ADMIN SETUP
-                
-                userDisplay.textContent = user.uid.slice(0, 6) + '...';
-                // Enable button
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>Assign Task</span>';
-                submitBtn.classList.remove('disabled:bg-slate-300', 'disabled:cursor-not-allowed');
-                
-                initFirestoreListeners();
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = displayNameInput.value.trim();
+            if (name) {
+                displayName = name;
+                localStorage.setItem('taskApp_userName', name);
+                initApp();
             }
         });
 
-        // --- Firestore Real-time Listener (Backend Logic) ---
-        function initFirestoreListeners() {
-            if (!currentUser) return;
+        async function initApp() {
+            // Hide Modal, Show App
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => { modal.style.display = 'none'; }, 500);
+            
+            appContent.classList.remove('hidden-app');
+            appContent.classList.add('visible-app');
+            
+            document.getElementById('current-user-name').textContent = displayName;
+            
+            // Firebase Auth
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth Failed", error);
+                showToast("Authentication Failed", "error");
+            }
+        }
 
-            // UPDATED PATH: Matched to Firebase Rules
-            // Rule: /artifacts/{appId}/public/data/{collection}/{docId}
-            const tasksCollection = collection(db, 'artifacts', APP_ID, 'public', 'data', 'tasks');
+        window.handleLogout = async () => {
+            localStorage.removeItem('taskApp_userName');
+            await signOut(auth);
+            location.reload();
+        }
 
-            const safetyTimeout = setTimeout(() => {
-                if (!hasLoadedOnce) {
-                    console.warn("Snapshot took too long, forcing empty state.");
-                    hasLoadedOnce = true;
-                    renderTasks(); 
-                }
-            }, 6000);
+        // --- 2. Auth Listener ---
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                submitBtn.disabled = false;
+                submitBtn.querySelector('.btn-text').textContent = 'Assign Task';
+                initDataSync();
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.querySelector('.btn-text').textContent = 'Connecting...';
+            }
+        });
 
-            onSnapshot(tasksCollection, (snapshot) => {
-                clearTimeout(safetyTimeout); 
-                
-                const loadedTasks = snapshot.docs.map(d => ({
-                    id: d.id,
-                    ...d.data()
+        // --- 3. Firestore Sync (Read) ---
+        function initDataSync() {
+            // Fetch all tasks from the public collection
+            const q = query(collection(db, COLLECTION_PATH));
+            
+            onSnapshot(q, (snapshot) => {
+                tasks = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
                 }));
-
-                // Sort: Newest first
-                loadedTasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-                tasks = loadedTasks;
-                hasLoadedOnce = true;
+                
+                // Sort by time (client side)
+                tasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                
                 renderTasks();
             }, (error) => {
-                clearTimeout(safetyTimeout);
-
-                let errorMessage = "Connection Issue";
-                let errorDetails = "Check console for details.";
-                let icon = "wifi-off";
-                let colorClass = "rose";
-
-                // DETECT PERMISSION ERRORS
-                if (error.code === 'permission-denied' || error.message.includes("permissions") || error.message.includes("Missing or insufficient")) {
-                    console.warn("Firestore Permission Denied (Access blocked).");
-                    errorMessage = "Database Permission Denied";
-                    errorDetails = `
-                        <div class="mt-2 text-left text-xs bg-white p-3 rounded border border-rose-200">
-                            <strong>Note:</strong> Access to public tasks requires you to use the specific path defined in your security rules.<br/>
-                            Current Path: <code>/artifacts/${APP_ID}/public/data/tasks</code>
-                        </div>
-                    `;
-                    icon = "lock";
-                } else {
-                     console.error("Error listening to tasks:", error);
-                }
-
-                taskGrid.innerHTML = `
-                    <div class="col-span-full py-12 flex flex-col items-center justify-center text-${colorClass}-500 border-2 border-dashed border-${colorClass}-200 rounded-2xl bg-${colorClass}-50/50 p-6">
-                        <i data-lucide="${icon}" class="w-10 h-10 mb-3"></i>
-                        <p class="font-bold text-lg">${errorMessage}</p>
-                        <div class="text-sm mt-1">${errorDetails}</div>
-                    </div>
-                `;
-                lucide.createIcons();
+                console.error("Sync Error:", error);
             });
         }
 
-        // --- CRUD Operations ---
-        
-        // CREATE
-        form.addEventListener('submit', async (e) => {
+        // --- 4. Create Task (Write) ---
+        document.getElementById('add-task-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!currentUser || isSubmitting) return;
+            if (!currentUser) return;
 
-            const taskName = document.getElementById('taskName').value.trim();
-            const assigneeName = document.getElementById('assigneeName').value.trim();
-            const creatorName = document.getElementById('creatorName').value.trim();
+            const title = document.getElementById('taskTitle').value;
+            const assignee = document.getElementById('taskAssignee').value;
+            const priority = document.getElementById('taskPriority').value;
 
-            if (!taskName || !assigneeName || !creatorName) return;
-
-            isSubmitting = true;
+            // UI Loading state
+            const btnText = submitBtn.querySelector('.btn-text');
+            const loader = submitBtn.querySelector('.loader');
+            const originalText = btnText.textContent;
+            
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<div class="loader"></div>';
+            btnText.textContent = 'Posting...';
+            loader.classList.remove('hidden');
 
             try {
-                // UPDATED PATH: Matched to Firebase Rules
-                const tasksCollection = collection(db, 'artifacts', APP_ID, 'public', 'data', 'tasks');
-                await addDoc(tasksCollection, {
-                    title: taskName,
-                    assignee: assigneeName,
-                    creator: creatorName,
-                    creatorUid: currentUser.uid,
+                await addDoc(collection(db, COLLECTION_PATH), {
+                    title: title,
+                    assignee: assignee,
+                    priority: priority,
+                    creatorName: displayName,      // The name entered in modal
+                    creatorUid: currentUser.uid,   // Secure ID for delete permission
                     completed: false,
                     createdAt: Date.now()
                 });
                 
-                document.getElementById('taskName').value = '';
-                document.getElementById('assigneeName').value = '';
+                // Clear form
+                document.getElementById('taskTitle').value = '';
+                document.getElementById('taskAssignee').value = '';
+                showToast("Task assigned to public board");
             } catch (error) {
-                console.error("Error adding task:", error);
-                
-                if (error.code === 'permission-denied' || error.message.includes("permissions")) {
-                     alert("Permission Denied: Please check your Firebase Rules or path structure.");
-                } else {
-                     alert("Failed to assign task. See console.");
-                }
+                showToast("Failed to post task", "error");
+                console.error(error);
             } finally {
-                isSubmitting = false;
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>Assign Task</span>';
+                btnText.textContent = originalText;
+                loader.classList.add('hidden');
             }
         });
 
-        // Expose functions to window (Required for Modules)
-        window.toggleTaskStatus = async (taskId, currentStatus) => {
-            if (!currentUser) return;
+        // --- 5. Actions (Update/Delete) ---
+        window.toggleStatus = async (id, currentStatus) => {
+            const docRef = doc(db, COLLECTION_PATH, id);
             try {
-                // UPDATED PATH: Matched to Firebase Rules
-                const taskRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'tasks', taskId);
-                await updateDoc(taskRef, { completed: !currentStatus });
-            } catch (error) {
-                console.error("Error toggling task:", error);
-                if (error.code === 'permission-denied') {
-                    alert("Permission Denied: Please update your Firebase Rules.");
-                }
-            }
+                await updateDoc(docRef, { completed: !currentStatus });
+            } catch (e) { showToast("Error updating status", "error"); }
         };
 
-        window.deleteTask = async (taskId) => {
+        window.deleteTask = async (id, taskCreatorUid) => {
             if (!currentUser) return;
-            try {
-                // UPDATED PATH: Matched to Firebase Rules
-                const taskRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'tasks', taskId);
-                await deleteDoc(taskRef);
-            } catch (error) {
-                console.error("Error deleting task:", error);
-                if (error.code === 'permission-denied') {
-                    alert("Permission Denied: Please update your Firebase Rules.");
-                }
+            // Client-side verification check (Server rules should also enforce this)
+            if (taskCreatorUid !== currentUser.uid) {
+                showToast("You can only delete tasks you created", "error");
+                return;
             }
+            
+            if(!confirm("Delete this task?")) return;
+
+            try {
+                await deleteDoc(doc(db, COLLECTION_PATH, id));
+                showToast("Task deleted");
+            } catch (e) { showToast("Error deleting task", "error"); }
         };
-        
-        // Expose filter function
-        window.setFilter = (filterType) => {
-            currentFilter = filterType;
+
+        // --- 6. Rendering & Filters ---
+        window.setFilter = (type) => {
+            currentFilter = type;
+            document.getElementById('filter-all').className = type === 'all' ? 'px-3 py-1.5 text-xs font-semibold rounded-md bg-indigo-100 text-indigo-700' : 'px-3 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:bg-slate-100';
+            document.getElementById('filter-mine').className = type === 'mine' ? 'px-3 py-1.5 text-xs font-semibold rounded-md bg-indigo-100 text-indigo-700' : 'px-3 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:bg-slate-100';
             renderTasks();
-            
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.className = 'filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-slate-700 whitespace-nowrap';
-            });
-            
-            const activeBtn = document.getElementById(`filter-${filterType}`);
-            let activeClass = '';
-            if (filterType === 'all') activeClass = 'bg-slate-100 text-slate-900';
-            if (filterType === 'pending') activeClass = 'bg-orange-50 text-orange-700';
-            if (filterType === 'completed') activeClass = 'bg-emerald-50 text-emerald-700';
-            
-            activeBtn.className = `filter-btn px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeClass} whitespace-nowrap`;
         };
 
-        // --- Rendering ---
+        window.filterTasks = renderTasks; // Bind search input
+
         function renderTasks() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
             const filtered = tasks.filter(task => {
-                if (currentFilter === 'pending') return !task.completed;
-                if (currentFilter === 'completed') return task.completed;
+                if (currentFilter === 'mine' && task.creatorUid !== currentUser?.uid) return false;
+                
+                if (searchTerm) {
+                    return (task.title.toLowerCase().includes(searchTerm) || 
+                           task.assignee.toLowerCase().includes(searchTerm) ||
+                           task.creatorName.toLowerCase().includes(searchTerm));
+                }
                 return true;
             });
 
-            const pendingCount = tasks.filter(t => !t.completed).length;
-            if (pendingCount === 0 && tasks.length > 0) {
-                statsDisplay.innerHTML = `<span class="text-emerald-600 flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> All caught up!</span>`;
-            } else {
-                statsDisplay.textContent = `${pendingCount} shared tasks remaining`;
-            }
-
             if (filtered.length === 0) {
-                 if (tasks.length === 0) {
-                     taskGrid.innerHTML = `
-                        <div class="col-span-full py-12 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl bg-white/50">
-                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                                <i data-lucide="layout-list" class="w-8 h-8 text-slate-300"></i>
-                            </div>
-                            <p class="font-medium">No shared tasks found</p>
-                            <p class="text-sm mt-1">Assign tasks to your team to see them here.</p>
-                        </div>
-                    `;
-                } else {
-                     taskGrid.innerHTML = `
-                        <div class="col-span-full py-12 flex flex-col items-center justify-center text-slate-400">
-                            <p class="font-medium">No tasks match this filter</p>
-                        </div>
-                    `;
-                }
+                taskGrid.innerHTML = `
+                    <div class="col-span-full py-16 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                        <i data-lucide="clipboard-list" class="w-10 h-10 mb-2 opacity-50"></i>
+                        <p>No tasks found</p>
+                    </div>`;
             } else {
                 taskGrid.innerHTML = filtered.map(task => {
-                    // RESTRICTED DELETE LOGIC
-                    // Only show delete button if currentUser.uid matches ADMIN_UID
-                    const showDelete = currentUser && currentUser.uid === ADMIN_UID;
+                    // Logic: Only show delete button if I created this task
+                    const isOwner = currentUser && task.creatorUid === currentUser.uid;
                     
-                    return `
-                    <div class="group relative bg-white rounded-2xl p-5 border transition-all duration-200 hover:shadow-md flex flex-col justify-between ${task.completed ? 'border-slate-100 opacity-75 hover:opacity-100' : 'border-slate-200 shadow-sm'}">
-                        <div>
-                            <div class="flex items-start justify-between mb-3">
-                                <div class="text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide ${task.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}">
-                                    ${task.completed ? 'Completed' : 'Pending'}
-                                </div>
-                                
-                                ${showDelete ? `
-                                <button onclick="deleteTask('${task.id}')" class="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded hover:bg-rose-50" title="Delete assignment">
-                                    <i data-lucide="trash-2" width="18" height="18"></i>
-                                </button>
-                                ` : ''}
-                            </div>
+                    const priorityColor = task.priority === 'High' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
+                                         task.priority === 'Low' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
+                                         'bg-amber-50 text-amber-600 border-amber-100';
 
-                            <h3 class="font-semibold text-lg leading-snug mb-3 ${task.completed ? 'text-slate-500 line-through' : 'text-slate-800'}">
-                                ${escapeHtml(task.title)}
-                            </h3>
-                            
-                            <div class="bg-slate-50 rounded-lg p-3 mb-6 space-y-2 text-sm border border-slate-100">
-                                <div class="flex items-center gap-2 text-slate-600">
-                                   <span class="text-xs font-semibold text-slate-400 uppercase w-16">To:</span>
-                                   <div class="flex items-center gap-1.5 font-medium">
-                                      <i data-lucide="user" width="14" height="14" class="text-blue-500"></i>
-                                      ${escapeHtml(task.assignee)}
-                                   </div>
-                                </div>
-                                <div class="flex items-center gap-2 text-slate-600">
-                                   <span class="text-xs font-semibold text-slate-400 uppercase w-16">By:</span>
-                                   <div class="flex items-center gap-1.5 font-medium">
-                                      <i data-lucide="user-plus" width="14" height="14" class="text-purple-500"></i>
-                                      ${escapeHtml(task.creator || 'Unknown')}
-                                   </div>
-                                </div>
-                            </div>
+                    return `
+                    <div class="group bg-white rounded-xl p-5 border ${task.completed ? 'border-slate-100 opacity-60' : 'border-slate-200 shadow-sm hover:shadow-md'} transition-all flex flex-col animate-fade-in relative">
+                        
+                        ${isOwner ? `
+                        <button onclick="deleteTask('${task.id}', '${task.creatorUid}')" 
+                            class="absolute top-4 right-4 text-slate-300 hover:text-rose-500 p-1 hover:bg-rose-50 rounded transition-colors" title="Delete Task">
+                            <i data-lucide="trash-2" width="16"></i>
+                        </button>
+                        ` : ''}
+
+                        <div class="mb-3">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase border ${priorityColor}">
+                                ${task.priority}
+                            </span>
                         </div>
 
-                        <button onclick="toggleTaskStatus('${task.id}', ${task.completed})" class="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${task.completed ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/10'}">
-                            ${task.completed ? 
-                                `<i data-lucide="check-circle" width="16" height="16"></i> Mark as Pending` : 
-                                `<i data-lucide="circle" width="16" height="16"></i> Mark as Done`
-                            }
-                        </button>
+                        <h3 class="font-bold text-slate-800 mb-4 leading-tight ${task.completed ? 'line-through text-slate-400' : ''}">
+                            ${escapeHtml(task.title)}
+                        </h3>
+
+                        <div class="mt-auto space-y-3">
+                            <div class="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px]">
+                                        ${(task.assignee || 'U').charAt(0).toUpperCase()}
+                                    </div>
+                                    <span class="font-medium text-slate-600">${escapeHtml(task.assignee)}</span>
+                                </div>
+                                <span class="text-slate-400">assigned by ${isOwner ? 'You' : escapeHtml(task.creatorName)}</span>
+                            </div>
+
+                            <button onclick="toggleStatus('${task.id}', ${task.completed})" 
+                                class="w-full py-2 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2 transition-all
+                                ${task.completed ? 'bg-slate-100 text-slate-500 hover:bg-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/10'}">
+                                ${task.completed ? '<i data-lucide="rotate-ccw" width="14"></i> Reopen' : '<i data-lucide="check" width="14"></i> Complete'}
+                            </button>
+                        </div>
                     </div>
                 `}).join('');
             }
-            
             lucide.createIcons();
         }
 
-        // Helper to prevent XSS
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+        // --- Utilities ---
+        function showToast(msg, type='success') {
+            const toast = document.createElement('div');
+            const colors = type === 'error' ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200';
+            toast.className = `flex items-center gap-2 px-4 py-3 rounded-lg border shadow-lg text-sm font-medium transform transition-all translate-y-10 opacity-0 ${colors}`;
+            toast.innerHTML = type === 'error' ? `<i data-lucide="alert-circle" width="16"></i> ${msg}` : `<i data-lucide="check-circle" width="16"></i> ${msg}`;
+            document.getElementById('toast-container').appendChild(toast);
+            lucide.createIcons();
+            
+            requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        lucide.createIcons();
+        function escapeHtml(text) {
+            if(!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
     </script>
 </body>
 </html>
