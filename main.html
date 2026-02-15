@@ -237,6 +237,48 @@
         </div>
     </div>
 
+    <!-- LOADING ANIMATION OVERLAY -->
+    <div id="loading-animation" class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/95 backdrop-blur-md hidden transition-opacity duration-300">
+        <div class="text-center">
+            <div class="relative w-24 h-24 mx-auto mb-6">
+                <!-- Pulsing Cortex Logo -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-20 h-20 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center animate-pulse shadow-2xl">
+                        <i class="fa-solid fa-bolt text-white text-4xl"></i>
+                    </div>
+                </div>
+                <!-- Outer Ring Animation -->
+                <div class="absolute inset-0 rounded-lg border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin" style="animation-duration: 1.5s;"></div>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">CORTEX</h2>
+            <p class="text-slate-400 text-sm animate-pulse">Redirecting to Your Dashboard...</p>
+        </div>
+    </div>
+
+    <!-- WELCOME BACK SCREEN MODAL -->
+    <div id="welcome-back-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl transform scale-100 transition-transform border border-slate-700">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i class="fa-solid fa-bolt text-white text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white">Welcome Back!</h2>
+                <p id="welcome-email-display" class="text-slate-400 text-sm mt-2">Cortex Workspace</p>
+            </div>
+            
+            <p class="text-slate-300 text-sm text-center mb-6">We've remembered your login credentials on this device. Would you like to continue?</p>
+            
+            <div class="space-y-3">
+                <button onclick="window.app.proceedWithAutoLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg">
+                    <i class="fa-solid fa-arrow-right mr-2"></i> Yes, Continue
+                </button>
+                <button onclick="window.app.rejectAutoLogin()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 rounded-lg transition-colors border border-slate-600">
+                    <i class="fa-solid fa-redo mr-2"></i> Use Different Account
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- LOGIN/SIGNUP MODAL -->
     <div id="login-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden transition-opacity">
         <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl transform scale-100 transition-transform border border-slate-700 relative">
@@ -328,8 +370,14 @@
         </div>
 
         <div class="flex items-center gap-6">
-            <div id="header-guest-actions" class="hidden">
+            <div id="header-guest-actions" class="hidden flex items-center gap-4">
                 <button onclick="document.getElementById('login-modal').classList.remove('hidden')" class="text-sm font-bold text-slate-400 hover:text-blue-500">Login</button>
+            </div>
+            
+            <div id="header-disconnect-btn" class="hidden">
+                <button onclick="window.app.disconnect()" class="text-sm font-bold text-slate-400 hover:text-red-500 flex items-center gap-2" title="Clear saved login and start fresh">
+                    <i class="fa-solid fa-plug"></i> Disconnect
+                </button>
             </div>
 
             <div id="header-user-profile" class="flex items-center gap-3 cursor-pointer" onclick="window.app.showView('profile')">
@@ -446,7 +494,7 @@
                 
                 <div class="z-10">
                     <span class="text-slate-500 text-xs font-bold tracking-[0.2em] uppercase">Remaining</span>
-                    <div class="text-7xl md:text-8xl font-mono font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" id="timer-display">30:00</div>
+                    <div class="text-7xl md:text-8xl font-mono font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" id="timer-display">60:00</div>
                     <div class="flex gap-3 mt-4 justify-center">
                         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                         <span class="w-2 h-2 rounded-full bg-blue-500/50 animate-pulse delay-75"></span>
@@ -470,7 +518,7 @@
     </div>
 
     <div class="flex justify-center gap-4 mt-12">
-        <button onclick="window.app.setTimerMode(30)" class="px-6 py-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all font-semibold">Focus Session</button>
+    <button onclick="window.app.setTimerMode(60)" class="px-6 py-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all font-semibold">Focus Session</button>
         <button onclick="window.app.setTimerMode(10)" class="px-6 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all font-semibold">Short Break</button>
     </div>
 
@@ -828,7 +876,7 @@
         let currentUsername = "Guest";
         let mediaStream = null;
         let timerInterval = null;
-        let timeLeft = 25 * 60;
+        let timeLeft = 60 * 60;
 
         // Profile State
         let currentProfile = null;
@@ -885,6 +933,47 @@
             }
         };
 
+        // --- DEVICE AUTO-LOGIN MANAGEMENT ---
+        const deviceStorage = {
+            generateDeviceId() {
+                let deviceId = localStorage.getItem('cortex_device_id');
+                if (!deviceId) {
+                    deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                    localStorage.setItem('cortex_device_id', deviceId);
+                }
+                return deviceId;
+            },
+            
+            saveUserCredentials(email, password) {
+                localStorage.setItem('cortex_device_id', this.generateDeviceId());
+                localStorage.setItem('cortex_remembered_email', email);
+                localStorage.setItem('cortex_remembered_password', password);
+                localStorage.setItem('cortex_auto_login_enabled', 'true');
+            },
+            
+            getRememberedCredentials() {
+                const email = localStorage.getItem('cortex_remembered_email');
+                const password = localStorage.getItem('cortex_remembered_password');
+                const isEnabled = localStorage.getItem('cortex_auto_login_enabled') === 'true';
+                
+                if (email && password && isEnabled) {
+                    return { email, password };
+                }
+                return null;
+            },
+            
+            clearRememberedCredentials() {
+                localStorage.removeItem('cortex_remembered_email');
+                localStorage.removeItem('cortex_remembered_password');
+                localStorage.removeItem('cortex_auto_login_enabled');
+            },
+            
+            hasRememberedUser() {
+                return localStorage.getItem('cortex_auto_login_enabled') === 'true' && 
+                       localStorage.getItem('cortex_remembered_email') !== null;
+            }
+        };
+
         // --- MOCK DATA GENERATORS FOR MULTI-USER FORECAST ---
         const mockUsers = ['Alex Chen', 'Jordan Smith', 'Casey Lee', 'Morgan White', 'Riley Blue', 'Taylor Green'];
         const mockMessages = [
@@ -906,6 +995,9 @@
                 const viewHome = document.getElementById('view-home');
                 if (viewHome) viewHome.classList.add('hidden');
                 
+                // Initialize device
+                deviceStorage.generateDeviceId();
+                
                 // Initialize guest identity
                 if (guestIdentity.isGuest()) {
                     currentUsername = guestIdentity.getGuestName();
@@ -914,21 +1006,40 @@
                 // Call Mock Volume here
                 this.renderAllMocks();
                 
-                // Show splash screen with animation, then show login modal
+                // Show splash screen with animation, then proceed with auth check
                 const splashScreen = document.getElementById('splash-screen');
                 const loginModal = document.getElementById('login-modal');
+                const welcomeBackModal = document.getElementById('welcome-back-modal');
                 
                 if (splashScreen) {
                     // Splash screen is visible for 2.8 seconds (animation duration)
                     setTimeout(() => {
                         splashScreen.style.display = 'none';
-                        if (loginModal) {
+                        
+                        // Check for remembered user and show welcome back screen
+                        if (deviceStorage.hasRememberedUser()) {
+                            const creds = deviceStorage.getRememberedCredentials();
+                            if (welcomeBackModal) {
+                                const emailDisplay = document.getElementById('welcome-email-display');
+                                if (emailDisplay) emailDisplay.textContent = creds.email;
+                                welcomeBackModal.classList.remove('hidden');
+                            }
+                        } else if (loginModal) {
                             loginModal.classList.remove('hidden');
                         }
                     }, 2800);
-                } else if (loginModal) {
-                    // If no splash screen, show login modal immediately
-                    loginModal.classList.remove('hidden');
+                } else {
+                    // If no splash screen, proceed with auth check immediately
+                    if (deviceStorage.hasRememberedUser()) {
+                        const creds = deviceStorage.getRememberedCredentials();
+                        if (welcomeBackModal) {
+                            const emailDisplay = document.getElementById('welcome-email-display');
+                            if (emailDisplay) emailDisplay.textContent = creds.email;
+                            welcomeBackModal.classList.remove('hidden');
+                        }
+                    } else if (loginModal) {
+                        loginModal.classList.remove('hidden');
+                    }
                 }
                 
                 if (auth) {
@@ -958,8 +1069,14 @@
                         
                         // Hide Modal & Unlock
                         if (loginModal) loginModal.classList.add('hidden');
+                        const welcomeBackModal = document.getElementById('welcome-back-modal');
+                        if (welcomeBackModal) welcomeBackModal.classList.add('hidden');
+                        const loadingAnimation = document.getElementById('loading-animation');
+                        if (loadingAnimation) loadingAnimation.classList.add('hidden');
                         if (guestActions) guestActions.classList.add('hidden');
                         if (userProfile) userProfile.classList.remove('hidden');
+                        const disconnectBtn = document.getElementById('header-disconnect-btn');
+                        if (disconnectBtn) disconnectBtn.classList.remove('hidden');
                         isUILoggedIn = true;
                         
                         // Show login success popup
@@ -979,6 +1096,8 @@
                     } else {
                         currentUser = null;
                         isUILoggedIn = false;
+                        const disconnectBtn = document.getElementById('header-disconnect-btn');
+                        if (disconnectBtn) disconnectBtn.classList.add('hidden');
                         
                         // GUEST MODE: Render the mock forecast
                         window.app.renderAllMocks();
@@ -1180,10 +1299,12 @@
                         // NOTE: Using UID for strictly private path compliance
                         const docRef = doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'data');
                         await setDoc(docRef, { ...defaultProfile, displayName: name, email: email }, { merge: true });
+                        deviceStorage.saveUserCredentials(email, password);
 
                     } else {
                         // Login Flow
                         await signInWithEmailAndPassword(auth, email, password);
+                        deviceStorage.saveUserCredentials(email, password);
                     }
                 } catch (error) {
                     console.error(error);
@@ -1212,6 +1333,52 @@
                     this.showNotification("Logged out successfully", "success");
                     location.reload();
                 });
+            },
+
+            proceedWithAutoLogin() {
+                const loadingAnimation = document.getElementById('loading-animation');
+                const welcomeBackModal = document.getElementById('welcome-back-modal');
+                if (loadingAnimation) loadingAnimation.classList.remove('hidden');
+                if (welcomeBackModal) welcomeBackModal.classList.add('hidden');
+                const creds = deviceStorage.getRememberedCredentials();
+                if (!creds) {
+                    this.showNotification("Credentials not found", "error");
+                    if (loadingAnimation) loadingAnimation.classList.add('hidden');
+                    return;
+                }
+                setTimeout(async () => {
+                    try {
+                        await signInWithEmailAndPassword(auth, creds.email, creds.password);
+                    } catch (error) {
+                        console.error('Auto-login failed:', error);
+                        this.showNotification('Auto-login failed', 'error');
+                        if (loadingAnimation) loadingAnimation.classList.add('hidden');
+                        if (welcomeBackModal) welcomeBackModal.classList.remove('hidden');
+                    }
+                }, 500);
+            },
+
+            rejectAutoLogin() {
+                deviceStorage.clearRememberedCredentials();
+                const welcomeBackModal = document.getElementById('welcome-back-modal');
+                const loginModal = document.getElementById('login-modal');
+                if (welcomeBackModal) welcomeBackModal.classList.add('hidden');
+                if (loginModal) loginModal.classList.remove('hidden');
+                this.backToModeSelector();
+                this.showNotification('Choose your login method', 'info');
+            },
+
+            disconnect() {
+                deviceStorage.clearRememberedCredentials();
+                if (currentUser) {
+                    signOut(auth).then(() => {
+                        this.showNotification('Disconnected successfully', 'success');
+                        setTimeout(() => location.reload(), 500);
+                    });
+                } else {
+                    this.showNotification('All saved data cleared', 'success');
+                    setTimeout(() => location.reload(), 500);
+                }
             },
 
             renderAllMocks() {
