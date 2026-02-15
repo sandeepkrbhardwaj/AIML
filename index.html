@@ -178,7 +178,7 @@
             75% { transform: translateX(5px); }
         }
         .auth-required-shake {
-            animation: shake 0.1s ease-in-out 0s 2;
+            animation: shake 0.2s ease-in-out 0s 2;
             border: 1px solid #ef4444 !important;
         }
         
@@ -248,7 +248,7 @@
                     </div>
                 </div>
                 <!-- Outer Ring Animation -->
-                <div class="absolute inset-0 rounded-lg border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin" style="animation-duration: 0.1s;"></div>
+                <div class="absolute inset-0 rounded-lg border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin" style="animation-duration: 1.5s;"></div>
             </div>
             <h2 class="text-2xl font-bold text-white mb-2">CORTEX</h2>
             <p class="text-slate-400 text-sm animate-pulse">Redirecting to Your Dashboard...</p>
@@ -592,29 +592,32 @@
 
         <!-- VIEW: COURSES -->
         <div id="view-courses" class="hidden fade-in native-view-container space-y-6">
-            <h2 class="text-2xl font-bold text-white">Live Classroom</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="card-dark rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border-none">
-                    <div class="h-32 bg-gradient-to-r from-indigo-600 to-purple-700 flex items-center justify-center">
-                        <i class="fa-solid fa-code text-white text-4xl opacity-50"></i>
-                    </div>
-                    <div class="p-6">
-                        <h3 class="font-bold text-lg text-white mb-2">Advanced Web Dev</h3>
-                        <p class="text-slate-400 text-sm mb-4">Master modern frameworks and real-time systems.</p>
-                        <button onclick="window.app.joinLiveClass('Web Dev')" class="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-600">Start Session</button>
-                    </div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Live Classroom</h2>
+                    <p class="text-slate-400 text-sm mt-1">All courses support live sessions. Updates in real time for every user.</p>
                 </div>
-                <div class="card-dark rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border-none">
-                    <div class="h-32 bg-gradient-to-r from-emerald-600 to-teal-700 flex items-center justify-center">
-                        <i class="fa-solid fa-database text-white text-4xl opacity-50"></i>
-                    </div>
-                    <div class="p-6">
-                        <h3 class="font-bold text-lg text-white mb-2">Database Architecture</h3>
-                        <p class="text-slate-400 text-sm mb-4">Scalable storage solutions with Firebase.</p>
-                        <button onclick="window.app.joinLiveClass('Database')" class="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-600">Start Session</button>
-                    </div>
+                <div id="live-now-badge" class="hidden items-center gap-2 bg-red-500/15 border border-red-500/40 rounded-full px-4 py-2 text-red-300 text-sm font-medium">
+                    <i class="fa-solid fa-circle text-red-500 text-xs animate-pulse"></i>
+                    <span id="live-now-count">0</span> live now
                 </div>
+            </div>
+
+            <!-- Live now strip: meeting link shown to all users -->
+            <div id="live-now-strip" class="hidden rounded-xl border-2 border-red-500/50 bg-gradient-to-r from-red-950/60 to-slate-900/90 p-4 mb-6 shadow-lg shadow-red-500/10">
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="inline-flex items-center gap-2 text-red-200 font-bold">
+                        <i class="fa-solid fa-circle text-red-500 text-sm animate-pulse"></i>
+                        Meeting is going on
+                    </span>
+                    <span class="text-slate-300">—</span>
+                    <span class="text-white font-medium">Meeting link is shown below for all users. Anyone can connect or join.</span>
+                </div>
+            </div>
+
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mt-6 mb-3">All courses</h3>
+            <div id="courses-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Courses rendered dynamically -->
             </div>
 
             <!-- Live Room -->
@@ -878,6 +881,9 @@
         let timerInterval = null;
         let timeLeft = 60 * 60;
 
+        // Live sessions (synced from Firestore so all users/accounts see same state)
+        let liveSessionsFromFirebase = {};
+
         // Profile State
         let currentProfile = null;
         let isProfileEditing = false;
@@ -1045,6 +1051,28 @@
                 if (auth) {
                     this.setupAuthListener();
                 }
+                // Live sessions: sync for ALL users (guests + logged-in) so everyone sees same live state
+                if (db) {
+                    this.startLiveSessionsListener();
+                }
+            },
+
+            // Real-time live sessions for ALL users (guests + signed-in). Every account sees the same live state.
+            startLiveSessionsListener() {
+                try {
+                    const liveRef = doc(db, 'artifacts', appId, 'public', 'liveSessions');
+                    onSnapshot(liveRef, (snapshot) => {
+                        const data = snapshot.exists() ? snapshot.data() : {};
+                        liveSessionsFromFirebase = data.sessions || {};
+                        // Always re-render courses when live data changes so every real user sees full live update
+                        const coursesView = document.getElementById('view-courses');
+                        if (coursesView && !coursesView.classList.contains('hidden')) {
+                            this.renderCourses();
+                        }
+                    }, (err) => console.warn('Live sessions listener:', err));
+                } catch (e) {
+                    console.warn('Live sessions listener init:', e);
+                }
             },
 
             setupAuthListener() {
@@ -1155,6 +1183,15 @@
                 // Instant profile rendering
                 if (viewId === 'profile') {
                     this.renderProfile();
+                }
+                
+                // Render courses with live status
+                if (viewId === 'courses') {
+                    this.renderCourses();
+                    // Start polling for live session updates
+                    this.startLiveSessionPolling();
+                } else {
+                    this.stopLiveSessionPolling();
                 }
             },
 
@@ -2192,12 +2229,399 @@
             },
 
             // --- VIDEO CLASSROOM LOGIC ---
-            joinLiveClass(courseName) {
-                const el = document.getElementById('live-room-interface');
-                if(el) el.classList.remove('hidden');
-                this.showNotification(`Joined ${courseName} session`, 'success');
-                this.startCamera();
+            // --- LIVE SESSION MANAGEMENT ---
+            getCurrentUserName() {
+                const navUserName = document.getElementById('nav-user-name');
+                if (navUserName) {
+                    const name = navUserName.textContent.replace(' (Guest)', '').trim();
+                    return name || 'Guest';
+                }
+                return 'Guest';
             },
+
+            getLiveSessions() {
+                return typeof liveSessionsFromFirebase === 'object' && liveSessionsFromFirebase !== null
+                    ? liveSessionsFromFirebase
+                    : {};
+            },
+
+            async setLiveSessionsToFirestore(sessions) {
+                if (!db) return;
+                try {
+                    const liveRef = doc(db, 'artifacts', appId, 'public', 'liveSessions');
+                    await setDoc(liveRef, { sessions, updatedAt: serverTimestamp() }, { merge: true });
+                } catch (e) {
+                    console.error('Error saving live sessions to Firestore:', e);
+                    this.showNotification('Could not update live session. Sign in may be required.', 'error');
+                }
+            },
+
+            async startLiveSession(courseName) {
+                if (!currentUser) {
+                    this.showNotification('Sign in to start a live session so everyone can see and join.', 'error');
+                    return;
+                }
+                const userName = this.getCurrentUserName();
+                const sessions = { ...this.getLiveSessions() };
+                
+                // Check if there's a configured meet link for this course
+                const configuredLinks = this.getConfiguredMeetLinks();
+                let meetUrl = configuredLinks[courseName];
+                
+                // If no configured link, prompt user to create one
+                if (!meetUrl) {
+                    const createNew = confirm(
+                        `No Google Meet link configured for "${courseName}".\n\n` +
+                        `Click OK to create a new instant meeting, or Cancel to enter a custom link.`
+                    );
+                    
+                    if (createNew) {
+                        meetUrl = "https://meet.google.com/new";
+                        this.showNotification(
+                            "Creating new Google Meet... Copy the meeting link from Google Meet and configure it for this course.",
+                            "info"
+                        );
+                    } else {
+                        const customLink = prompt(
+                            `Enter Google Meet link for "${courseName}":\n\n` +
+                            `Format: https://meet.google.com/xxx-yyyy-zzz`,
+                            ""
+                        );
+                        
+                        if (customLink && customLink.trim()) {
+                            meetUrl = customLink.trim();
+                            configuredLinks[courseName] = meetUrl;
+                            this.saveConfiguredMeetLinks(configuredLinks);
+                        } else {
+                            this.showNotification("Session start cancelled. Please configure a Meet link first.", "error");
+                            return;
+                        }
+                    }
+                }
+
+                sessions[courseName] = {
+                    host: userName,
+                    meetUrl: meetUrl,
+                    startTime: new Date().toISOString(),
+                    isLive: true
+                };
+
+                await this.setLiveSessionsToFirestore(sessions);
+                this.renderCourses();
+                
+                window.open(meetUrl, "_blank");
+                
+                if (meetUrl === "https://meet.google.com/new") {
+                    setTimeout(() => {
+                        this.showNotification(
+                            "After creating the meeting, copy the link and click 'Configure Meet Link' on the course card to save it.",
+                            "info"
+                        );
+                    }, 2000);
+                } else {
+                    this.showNotification(`Started live session for ${courseName}! All users can now see and join.`, "success");
+                }
+            },
+
+            getConfiguredMeetLinks() {
+                try {
+                    const links = localStorage.getItem('configuredMeetLinks');
+                    return links ? JSON.parse(links) : {};
+                } catch (e) {
+                    return {};
+                }
+            },
+
+            saveConfiguredMeetLinks(links) {
+                try {
+                    localStorage.setItem('configuredMeetLinks', JSON.stringify(links));
+                } catch (e) {
+                    console.error('Error saving meet links:', e);
+                }
+            },
+
+            configureMeetLink(courseName) {
+                const configuredLinks = this.getConfiguredMeetLinks();
+                const currentLink = configuredLinks[courseName] || "";
+                
+                const newLink = prompt(
+                    `Configure Google Meet link for "${courseName}":\n\n` +
+                    `Enter the full Google Meet URL:\n` +
+                    `Example: https://meet.google.com/abc-defg-hij`,
+                    currentLink
+                );
+                
+                if (newLink && newLink.trim()) {
+                    const link = newLink.trim();
+                    // Validate it's a Google Meet link
+                    if (link.includes('meet.google.com')) {
+                        configuredLinks[courseName] = link;
+                        this.saveConfiguredMeetLinks(configuredLinks);
+                        this.showNotification(`Meet link configured for ${courseName}`, "success");
+                        this.renderCourses();
+                    } else {
+                        this.showNotification("Invalid Google Meet link format", "error");
+                    }
+                }
+            },
+
+            joinLiveSession(courseName) {
+                const sessions = this.getLiveSessions();
+                const session = sessions[courseName];
+                
+                if (!session || !session.isLive) {
+                    this.showNotification("No live session available for this course", "error");
+                    return;
+                }
+
+                // Check if meet URL is valid
+                if (!session.meetUrl || !session.meetUrl.includes('meet.google.com')) {
+                    this.showNotification("Invalid Meet link. Please ask the host to reconfigure the meeting link.", "error");
+                    return;
+                }
+
+                // Warn if it's a "new" meeting link (not a real meeting)
+                if (session.meetUrl.includes('/new')) {
+                    const proceed = confirm(
+                        "This appears to be a meeting creation link.\n\n" +
+                        "If the meeting hasn't been created yet, you may see an error.\n\n" +
+                        "Click OK to proceed, or Cancel to wait for the host to create the meeting."
+                    );
+                    if (!proceed) return;
+                }
+
+                // Open Google Meet
+                window.open(session.meetUrl, "_blank");
+                this.showNotification(`Joining ${courseName} session hosted by ${session.host}`, "success");
+                
+                setTimeout(() => {
+                    this.showNotification(
+                        "If you see 'Check your meeting code', the meeting may not have started yet. Contact the host.",
+                        "info"
+                    );
+                }, 3000);
+            },
+
+            copyMeetingLink(courseName) {
+                const sessions = this.getLiveSessions();
+                const session = sessions[courseName];
+                if (!session || !session.meetUrl) {
+                    this.showNotification("No meeting link available", "error");
+                    return;
+                }
+                navigator.clipboard.writeText(session.meetUrl).then(() => {
+                    this.showNotification("Meeting link copied. Share it or open in another tab.", "success");
+                }).catch(() => {
+                    this.showNotification("Could not copy. Use the link below to join.", "info");
+                });
+            },
+
+            async endLiveSession(courseName) {
+                if (!currentUser) {
+                    this.showNotification('Sign in to end a live session.', 'error');
+                    return;
+                }
+                const sessions = { ...this.getLiveSessions() };
+                if (sessions[courseName]) {
+                    delete sessions[courseName];
+                    await this.setLiveSessionsToFirestore(sessions);
+                    this.renderCourses();
+                    this.showNotification(`Ended live session for ${courseName}`, "info");
+                }
+            },
+
+            renderCourses() {
+                const container = document.getElementById('courses-grid');
+                const liveBadge = document.getElementById('live-now-badge');
+                const liveCountEl = document.getElementById('live-now-count');
+                const liveStrip = document.getElementById('live-now-strip');
+                if (!container) return;
+
+                const sessions = this.getLiveSessions();
+                const currentUserName = this.getCurrentUserName();
+                const configuredLinks = this.getConfiguredMeetLinks();
+                const liveCount = Object.values(sessions).filter(s => s && s.isLive).length;
+
+                // Show/hide "Live now" header and strip
+                if (liveBadge && liveCountEl) {
+                    if (liveCount > 0) {
+                        liveBadge.classList.remove('hidden');
+                        liveBadge.classList.add('flex');
+                        liveCountEl.textContent = liveCount;
+                    } else {
+                        liveBadge.classList.add('hidden');
+                        liveBadge.classList.remove('flex');
+                    }
+                }
+                if (liveStrip) {
+                    if (liveCount > 0) {
+                        liveStrip.classList.remove('hidden');
+                        liveStrip.classList.add('block');
+                    } else {
+                        liveStrip.classList.add('hidden');
+                        liveStrip.classList.remove('block');
+                    }
+                }
+
+                const courses = [
+                    {
+                        name: "Advanced Web Dev",
+                        description: "Master modern frameworks and real-time systems.",
+                        icon: "fa-code",
+                        gradient: "from-indigo-600 to-purple-700"
+                    },
+                    {
+                        name: "Database Architecture",
+                        description: "Scalable storage solutions with Firebase.",
+                        icon: "fa-database",
+                        gradient: "from-emerald-600 to-teal-700"
+                    },
+                    {
+                        name: "Machine Learning",
+                        description: "ML models, training pipelines, and deployment.",
+                        icon: "fa-brain",
+                        gradient: "from-violet-600 to-purple-700"
+                    },
+                    {
+                        name: "Cloud & DevOps",
+                        description: "Containers, CI/CD, and cloud infrastructure.",
+                        icon: "fa-cloud",
+                        gradient: "from-sky-600 to-blue-700"
+                    },
+                    {
+                        name: "Security Fundamentals",
+                        description: "Secure coding, auth, and best practices.",
+                        icon: "fa-shield-halved",
+                        gradient: "from-rose-600 to-red-700"
+                    },
+                    {
+                        name: "Data Structures",
+                        description: "Algorithms and problem-solving.",
+                        icon: "fa-diagram-project",
+                        gradient: "from-amber-600 to-orange-700"
+                    }
+                ];
+
+                container.innerHTML = courses.map(course => {
+                    const session = sessions[course.name];
+                    const isLive = session && session.isLive;
+                    const isHost = isLive && currentUserName === session.host;
+                    const hasConfiguredLink = configuredLinks[course.name];
+                    
+                    return `
+                        <div class="rounded-2xl overflow-hidden border transition-all duration-200 ${isLive ? 'border-red-500/60 bg-slate-900/80 shadow-lg shadow-red-500/10 ring-1 ring-red-500/30' : 'border-slate-700/60 bg-slate-800/50 hover:border-slate-600'}">
+                            <!-- Card header with status -->
+                            <div class="relative h-36 bg-gradient-to-br ${course.gradient} flex items-center justify-center">
+                                <i class="fa-solid ${course.icon} text-white text-5xl opacity-40"></i>
+                                ${isLive ? `
+                                    <div class="absolute inset-0 bg-red-500/20"></div>
+                                    <div class="absolute top-3 left-3 right-3 flex items-center justify-between">
+                                        <span class="inline-flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                                            Live now
+                                        </span>
+                                        <span class="text-white/90 text-xs font-medium">Host: ${session.host}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="p-5">
+                                <h3 class="font-bold text-lg text-white mb-1">${course.name}</h3>
+                                <p class="text-slate-400 text-sm mb-4">${course.description}</p>
+
+                                ${isLive ? `
+                                    <div class="rounded-xl bg-red-950/40 border-2 border-red-600/50 p-4 mb-4">
+                                        <p class="text-red-200 font-bold mb-2 flex items-center gap-2">
+                                            <i class="fa-solid fa-circle text-red-500 text-xs animate-pulse"></i>
+                                            This meeting is going on — you can join now
+                                        </p>
+                                        <p class="text-slate-300 text-xs mb-3">Meeting link is visible to all users. Anyone can connect and join.</p>
+                                        <div class="flex items-center gap-2 text-red-200/90 text-sm mb-2">
+                                            <i class="fa-solid fa-user-tie"></i>
+                                            Hosted by ${session.host}
+                                        </div>
+                                        <div class="text-xs text-red-300/80 mb-3">Started ${new Date(session.startTime).toLocaleTimeString()}</div>
+                                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                                            <a href="${session.meetUrl.replace(/"/g, '&quot;')}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">
+                                                <i class="fa-solid fa-link"></i>
+                                                Connect to meeting
+                                            </a>
+                                            <button onclick="window.app.copyMeetingLink('${course.name}')" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm font-medium">
+                                                <i class="fa-solid fa-copy"></i>
+                                                Copy link
+                                            </button>
+                                        </div>
+                                        <div class="text-xs text-slate-400 break-all bg-slate-900/50 px-2 py-1 rounded">${session.meetUrl}</div>
+                                    </div>
+                                    <div class="flex gap-2 items-stretch">
+                                        <button onclick="window.app.joinLiveSession('${course.name}')" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-4 rounded-xl text-base font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-green-500/20 hover:shadow-green-500/30 hover:scale-[1.02]">
+                                            <i class="fa-solid fa-video text-xl"></i>
+                                            <span>Join this meeting</span>
+                                        </button>
+                                        ${isHost ? `
+                                            <button onclick="window.app.endLiveSession('${course.name}')" class="px-4 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium self-center" title="End session">
+                                                <i class="fa-solid fa-stop"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                ` : `
+                                    ${!hasConfiguredLink ? `
+                                        <div class="rounded-xl bg-amber-950/20 border border-amber-800/40 p-3 mb-4">
+                                            <p class="text-amber-200/90 text-sm mb-2">Meeting link not set</p>
+                                            <button onclick="window.app.configureMeetLink('${course.name}')" class="w-full text-amber-200 text-sm py-2 rounded-lg border border-amber-700/50 hover:bg-amber-900/30 transition-colors">
+                                                <i class="fa-solid fa-link mr-1"></i> Set meeting link
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <div class="flex items-center gap-2 text-green-400/90 text-sm mb-4">
+                                            <i class="fa-solid fa-check-circle"></i>
+                                            <span>Ready to go live</span>
+                                        </div>
+                                    `}
+                                    <button onclick="window.app.startLiveSession('${course.name}')" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
+                                        <i class="fa-solid fa-play"></i>
+                                        Start session
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            liveSessionPollInterval: null,
+            startLiveSessionPolling() {
+                // Poll every 3 seconds for live session updates
+                this.liveSessionPollInterval = setInterval(() => {
+                    this.renderCourses();
+                }, 3000);
+                
+                // Also listen for storage events (other tabs)
+                window.addEventListener('storage', (e) => {
+                    if (e.key === 'liveSessions') {
+                        this.renderCourses();
+                    }
+                });
+            },
+
+            stopLiveSessionPolling() {
+                if (this.liveSessionPollInterval) {
+                    clearInterval(this.liveSessionPollInterval);
+                    this.liveSessionPollInterval = null;
+                }
+            },
+
+            // Legacy function for backward compatibility
+            joinLiveClass(courseName) {
+                const sessions = this.getLiveSessions();
+                const session = sessions[courseName];
+                
+                if (session && session.isLive) {
+                    this.joinLiveSession(courseName);
+                } else {
+                    this.startLiveSession(courseName);
+                }
+            },
+
             async startCamera() {
                 try {
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -2530,5 +2954,3 @@
 </body>
 
 </html>
-
-
