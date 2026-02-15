@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORTEX Workspace</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Marked -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+        
+        /* CODING THEMED BACKGROUND */
+        body { 
+            background-color: #0f172a; /* Slate 900 */
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%), 
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+                linear-gradient(rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.95)),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23334155' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            overflow: hidden; 
+            height: 100vh;
+            color: #e2e8f0; /* Light text for dark mode */
+        }
+
+        /* --- LAYOUT --- */
+        header {
+            background: rgba(30, 41, 59, 0.8); /* Semi-transparent slate 800 */
+            backdrop-filter: blur(10px);
+            height: 64px;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 50;
+            border-bottom: 1px solid #334155;
+        }
+
+        .sidebar {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            width: 240px;
+            height: calc(100vh - 64px);
+            position: fixed;
+            top: 64px;
+            left: 0;
+            overflow-y: auto;
+            z-index: 40;
+            transition: width 0.3s ease;
+            border-right: 1px solid rgba(51, 65, 85, 0.5);
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
+        }
+/* Add this around line 50 */
+.blur-mock {
+    filter: blur(5px);
+    user-select: none;
+    pointer-events: none;
+}
+        .sidebar.collapsed { width: 72px; }
+
+        .main-frame {
+            margin-left: 240px;
+            margin-top: 64px;
+            height: calc(100vh - 64px);
+            overflow-y: hidden; 
+            padding: 0; 
+            transition: margin-left 0.3s ease;
+            position: relative;
+            background: transparent; /* Let body bg show through */
+        }
+
+        .main-frame.collapsed { margin-left: 72px; }
+
+        .native-view-container {
+            padding: 32px;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 100px;
+        }
+
+        /* --- COMPONENTS --- */
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            margin: 6px 8px;
+            color: #cbd5e1;
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: #38bdf8;
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+            border-radius: 0 2px 2px 0;
+        }
+
+        .nav-link:hover {
+            background: rgba(51, 65, 85, 0.6);
+            color: #60a5fa;
+            transform: translateX(4px);
+        }
+
+        .nav-link:hover::before {
+            transform: scaleY(1);
+        }
+
+        .nav-link.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.1);
+        }
+
+        .nav-link.active::before {
+            transform: scaleY(1);
+        }
+        
+        .sidebar.collapsed .nav-link span { display: none; }
+        .sidebar.collapsed .nav-link { justify-content: center; padding: 12px; }
+
+        .video-container {
+            background: #0f172a;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            height: 100%;
+            border: 1px solid #334155;
+        }
+        
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background: #0f172a;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: splashFadeOut 0.8s ease 2.0s forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes splashFadeOut { to { opacity: 0; } }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .auth-required-shake {
+            animation: shake 0.2s ease-in-out 0s 2;
+            border: 1px solid #ef4444 !important;
+        }
+        
+        .blur-mock {
+            filter: blur(4px);
+            opacity: 0.6;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .skeleton-text {
+            height: 12px;
+            background: #334155;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        /* CARD STYLES FOR DARK THEME */
+        .card-dark {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #f1f5f9;
+        }
+        
+        .blur-mock {
+            filter: blur(6px);
+            user-select: none;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .text-slate-800 { color: #f1f5f9 !important; }
+        .text-slate-700 { color: #e2e8f0 !important; }
+        .text-slate-600 { color: #cbd5e1 !important; }
+        .text-slate-500 { color: #94a3b8 !important; }
+        .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
+        .border-slate-200 { border-color: #334155 !important; }
+        .bg-slate-50 { background-color: #0f172a !important; }
+
+        @media(max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 240px; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-frame { margin-left: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SPLASH -->
+    <div id="splash-screen">
+        <div class="text-center">
+            <div class="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse">
+                <i class="fa-solid fa-layer-group text-4xl text-white"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-white tracking-widest">CORTEX</h1>
+        </div>
+    </div>
+
+    <!-- LOADING ANIMATION OVERLAY -->
+    <div id="loading-animation" class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/95 backdrop-blur-md hidden transition-opacity duration-300">
+        <div class="text-center">
+            <div class="relative w-24 h-24 mx-auto mb-6">
+                <!-- Pulsing Cortex Logo -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-20 h-20 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center animate-pulse shadow-2xl">
+                        <i class="fa-solid fa-bolt text-white text-4xl"></i>
+                    </div>
+                </div>
+                <!-- Outer Ring Animation -->
+                <div class="absolute inset-0 rounded-lg border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin" style="animation-duration: 1.5s;"></div>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">CORTEX</h2>
+            <p class="text-slate-400 text-sm animate-pulse">Redirecting to Your Dashboard...</p>
+        </div>
+    </div>
+
+    <!-- WELCOME BACK SCREEN MODAL -->
+    <div id="welcome-back-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl transform scale-100 transition-transform border border-slate-700">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i class="fa-solid fa-bolt text-white text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white">Welcome Back!</h2>
+                <p id="welcome-email-display" class="text-slate-400 text-sm mt-2">Cortex Workspace</p>
+            </div>
+            
+            <p class="text-slate-300 text-sm text-center mb-6">We've remembered your login credentials on this device. Would you like to continue?</p>
+            
+            <div class="space-y-3">
+                <button onclick="window.app.proceedWithAutoLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg">
+                    <i class="fa-solid fa-arrow-right mr-2"></i> Yes, Continue
+                </button>
+                <button onclick="window.app.rejectAutoLogin()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 rounded-lg transition-colors border border-slate-600">
+                    <i class="fa-solid fa-redo mr-2"></i> Use Different Account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN/SIGNUP MODAL -->
+    <div id="login-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl transform scale-100 transition-transform border border-slate-700 relative">
+            <!-- Close Button -->
+            <button onclick="window.app.closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl">
+                <i class="fa-solid fa-times"></i>
+            </button>
+            
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Cortex Access</h2>
+                    <p class="text-xs text-slate-400 font-medium uppercase tracking-wide mt-1">Choose Your Mode</p>
+                </div>
+            </div>
+            
+            <!-- MODE SELECTION (Initial View) -->
+            <div id="auth-mode-selector" class="space-y-3 mb-6">
+                <button onclick="window.app.setAuthMode('login')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-sign-in-alt"></i> Login as Existing User
+                </button>
+                <button onclick="window.app.setAuthMode('signup')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Create New Account
+                </button>
+                <button onclick="window.app.continueAsGuest()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 rounded-lg transition-colors border border-slate-600 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-secret"></i> Continue as Guest
+                </button>
+            </div>
+            
+            <!-- FORM (Hidden Initially) -->
+            <div id="auth-form-container" class="hidden">
+                <!-- Back Button -->
+                <button onclick="window.app.backToModeSelector()" class="text-slate-400 hover:text-white text-sm mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Options
+                </button>
+                
+                <!-- TOGGLE BUTTONS -->
+                <div class="flex bg-slate-900 p-1 rounded-lg mb-6">
+                    <button onclick="window.app.setAuthMode('login')" id="tab-login" class="flex-1 py-2 rounded-md text-sm font-bold transition-all bg-slate-700 text-white shadow">Login</button>
+                    <button onclick="window.app.setAuthMode('signup')" id="tab-signup" class="flex-1 py-2 rounded-md text-sm font-bold text-slate-400 transition-all hover:text-white">Sign Up</button>
+                </div>
+                
+                <form onsubmit="window.app.handleAuth(event)" class="space-y-4">
+                    <!-- Name Field (Controlled via JS) -->
+                    <div id="auth-name-container" class="hidden">
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Full Name</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                            <input type="text" name="displayName" class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-700 bg-slate-900 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="Your Name">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Email Address</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                            <input type="email" name="email" required class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-700 bg-slate-900 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="name@example.com">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                            <input type="password" name="password" required class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-700 bg-slate-900 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••••••">
+                        </div>
+                    </div>
+                    
+                    <div id="login-error" class="text-red-500 text-xs text-center hidden"></div>
+
+                    <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-lg mt-2">
+                        Login to Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-4">
+            <button id="toggleSidebar" class="text-slate-400 hover:bg-slate-800 p-2 rounded-lg transition-colors">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+            <div class="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                CORTEX
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div id="header-guest-actions" class="hidden flex items-center gap-4">
+                <button onclick="document.getElementById('login-modal').classList.remove('hidden')" class="text-sm font-bold text-slate-400 hover:text-blue-500">Login</button>
+            </div>
+            
+            <div id="header-disconnect-btn" class="hidden">
+                <button onclick="window.app.disconnect()" class="text-sm font-bold text-slate-400 hover:text-red-500 flex items-center gap-2" title="Clear saved login and start fresh">
+                    <i class="fa-solid fa-plug"></i> Disconnect
+                </button>
+            </div>
+
+            <div id="header-user-profile" class="flex items-center gap-3 cursor-pointer" onclick="window.app.showView('profile')">
+                <div class="text-right hidden sm:block">
+                    <p id="nav-user-name" class="text-slate-200 text-sm font-semibold">Guest</p>
+                    <p class="text-slate-500 text-xs">Verified</p>
+                </div>
+                <!-- Avatar updated to use initials via API -->
+                <img src="https://ui-avatars.com/api/?name=Guest&background=3b82f6&color=fff" id="user-avatar" class="w-9 h-9 rounded-full border border-slate-700 object-cover" alt="Profile">
+            </div>
+        </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar" class="sidebar shadow-sm scrollbar-hide">
+        <div class="p-4">
+            <!-- WORKSPACE SECTION -->
+            <div class="mb-1">
+                <div class="text-xs font-bold text-slate-400 uppercase px-3 py-3 mb-3 tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-blue-500"></i> Workspace
+                </div>
+                
+                <div onclick="window.app.showView('home')" class="nav-link active" id="link-home" title="Dashboard">
+                    <i class="fa-solid fa-house text-lg"></i> <span>Dashboard</span>
+                </div>
+                <div onclick="window.app.showView('focus')" class="nav-link" id="link-focus" title="Focus Zone">
+                    <i class="fa-solid fa-stopwatch text-lg"></i> <span>Focus Zone</span>
+                </div>
+            </div>
+
+            <!-- LEARNING SECTION -->
+            <div class="my-4">
+                <div class="text-xs font-bold text-slate-400 uppercase px-3 py-3 mb-3 tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-book text-green-500"></i> Learning
+                </div>
+                
+                <div onclick="window.app.showView('notes')" class="nav-link" id="link-notes" title="Notes">
+                    <i class="fa-solid fa-sticky-note text-lg"></i> <span>Notes</span>
+                </div>
+                <div onclick="window.app.showView('courses')" class="nav-link" id="link-courses" title="Courses">
+                    <i class="fa-solid fa-video text-lg"></i> <span>Courses</span>
+                </div>
+                <div onclick="window.app.showView('library')" class="nav-link" id="link-library" title="Library">
+                    <i class="fa-solid fa-book-open text-lg"></i> <span>Library</span>
+                </div>
+            </div>
+
+            <!-- TASKS & PROJECTS SECTION -->
+            <div class="my-4" id="tasks-section">
+                <div class="text-xs font-bold text-slate-400 uppercase px-3 py-3 mb-3 tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-briefcase text-purple-500"></i> Tasks
+                </div>
+                
+                <div onclick="window.app.showView('task')" class="nav-link" id="link-task" title="Tasks">
+                    <i class="fa-solid fa-list-check text-lg"></i> <span>Tasks</span>
+                </div>
+                <div onclick="window.app.showView('assignments')" class="nav-link" id="link-assignments" title="Assignments">
+                    <i class="fa-solid fa-briefcase text-lg"></i> <span>Assignments</span>
+                </div>
+                <div onclick="window.app.showView('report')" class="nav-link" id="link-report" title="Analytics">
+                    <i class="fa-solid fa-chart-pie text-lg"></i> <span>Analytics</span>
+                </div>
+            </div>
+
+            <!-- COLLABORATION SECTION -->
+            <div class="my-4">
+                <div class="text-xs font-bold text-slate-400 uppercase px-3 py-3 mb-3 tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-users text-orange-500"></i> Collaborate
+                </div>
+                
+                <div onclick="window.app.showView('chat')" class="nav-link" id="link-chat" title="Chat">
+                    <i class="fa-solid fa-comments text-lg"></i> <span>Chat</span>
+                </div>
+                <div onclick="window.app.showView('feedback')" class="nav-link" id="link-feedback" title="Feedback">
+                    <i class="fa-solid fa-comment-dots text-lg"></i> <span>Feedback</span>
+                </div>
+            </div>
+
+            <!-- SEPARATOR -->
+            <div class="my-4 border-t border-slate-700/50"></div>
+
+            <!-- ACTION SECTION -->
+            <div class="mt-auto pt-4">
+                <div onclick="window.app.logout()" class="nav-link text-red-400 hover:bg-red-900/20 hover:text-red-500" title="Disconnect">
+                    <i class="fa-solid fa-power-off text-lg w-5 text-center"></i> <span>Disconnect</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div id="main-frame" class="main-frame">
+        
+        <div id="notification-area" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+        <!-- VIEW: HOME (Dashboard) - UPDATED TO student-home.html -->
+        <div id="view-home" class="fade-in native-view-container h-full" style="padding: 0; overflow: hidden;">
+            <iframe src="student-home.html" class="w-full h-full border-none" title="Student Dashboard"></iframe>
+        </div>
+
+        <!-- VIEW: FOCUS ZONE -->
+      <div id="view-focus" class="hidden fade-in native-view-container space-y-10 py-10">
+    <div class="text-center">
+        <h2 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-2">Focus Zone</h2>
+        <p class="text-slate-400 text-sm tracking-widest uppercase">Deep Work Protocol Active</p>
+    </div>
+
+    <div class="flex justify-center items-center">
+        <div class="relative group">
+            <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            
+            <div class="relative card-dark w-80 h-80 md:w-96 md:h-96 rounded-full border border-slate-700 flex flex-col items-center justify-center text-center shadow-2xl backdrop-blur-xl bg-slate-900/80">
+                <div class="absolute inset-4 rounded-full border-2 border-dashed border-slate-800 animate-[spin_20s_linear_infinite]"></div>
+                
+                <div class="z-10">
+                    <span class="text-slate-500 text-xs font-bold tracking-[0.2em] uppercase">Remaining</span>
+                    <div class="text-7xl md:text-8xl font-mono font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" id="timer-display">60:00</div>
+                    <div class="flex gap-3 mt-4 justify-center">
+                        <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        <span class="w-2 h-2 rounded-full bg-blue-500/50 animate-pulse delay-75"></span>
+                        <span class="w-2 h-2 rounded-full bg-blue-500/20 animate-pulse delay-150"></span>
+                    </div>
+                </div>
+
+                <div class="absolute -bottom-6 flex gap-3 bg-slate-800 p-2 rounded-full border border-slate-700 shadow-xl">
+                    <button onclick="window.app.timerStart()" class="bg-blue-600 hover:bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg shadow-blue-900/40">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <button onclick="window.app.timerPause()" class="bg-slate-700 hover:bg-slate-600 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-pause"></i>
+                    </button>
+                    <button onclick="window.app.timerReset()" class="bg-slate-700 hover:bg-slate-600 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex justify-center gap-4 mt-12">
+    <button onclick="window.app.setTimerMode(60)" class="px-6 py-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all font-semibold">Focus Session</button>
+        <button onclick="window.app.setTimerMode(10)" class="px-6 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all font-semibold">Short Break</button>
+    </div>
+
+    </div>
+        <!-- VIEW: NOTES (PUBLIC) -->
+        <div id="view-notes" class="hidden fade-in native-view-container space-y-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Notes</h2>
+                    <p class="text-slate-400 text-sm">shared notes with anyone</p>
+                </div>
+            </div>
+            
+            <div class="card-dark p-6 rounded-xl shadow-sm mb-6">
+                <form onsubmit="window.app.handleAddNote(event)" class="space-y-3">
+                    <input type="text" name="content" required placeholder="Note title or text content..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-500">
+                    
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <select name="type" id="note-type-select" onchange="window.app.toggleNoteInputs(this.value)" class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                            <option value="text">Text Only</option>
+                            <option value="video">Video URL (YouTube)</option>
+                            <option value="image">Image File</option>
+                            <option value="pdf">PDF File</option>
+                        </select>
+
+                        <input type="url" name="mediaUrl" id="note-url-input" placeholder="Paste YouTube Link here..." class="hidden flex-grow bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                        <input type="file" name="mediaFile" id="note-file-input" accept="image/*,application/pdf" class="hidden flex-grow text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-900 file:text-blue-300 hover:file:bg-blue-800">
+
+                        <button type="submit" class="bg-yellow-500 text-slate-900 font-bold px-6 py-2 rounded-lg hover:bg-yellow-400 transition-colors whitespace-nowrap">
+                            <i class="fa-solid fa-plus mr-2"></i> Save Note
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="text-center text-slate-500 col-span-full py-12">Loading notes...</div>
+            </div>
+        </div>
+
+        <!-- VIEW: LIBRARY (PUBLIC) -->
+        <div id="view-library" class="hidden fade-in native-view-container space-y-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Resource Library</h2>
+                    <p class="text-slate-400 text-sm">Shared links, videos, and study materials.</p>
+                </div>
+            </div>
+
+            <div class="card-dark p-6 rounded-xl shadow-sm">
+                <h3 class="font-bold text-slate-200 mb-4">Share a Resource</h3>
+                <form onsubmit="window.app.handleAddResource(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="text" name="title" required placeholder="Resource Title" class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                    <input type="url" name="url" required placeholder="https://..." class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                    <select name="type" class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                        <option value="article">Article/Web</option>
+                        <option value="video">Video</option>
+                        <option value="book">Book/PDF</option>
+                        <option value="file">File Download</option>
+                    </select>
+                    <button type="submit" class="bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors">
+                        Share
+                    </button>
+                </form>
+            </div>
+
+            <div id="resource-list" class="space-y-4">
+                 <div class="text-center text-slate-500 py-12">Loading resources...</div>
+            </div>
+        </div>
+
+        <!-- VIEW: COURSES -->
+        <div id="view-courses" class="hidden fade-in native-view-container space-y-6">
+            <h2 class="text-2xl font-bold text-white">Live Classroom</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="card-dark rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border-none">
+                    <div class="h-32 bg-gradient-to-r from-indigo-600 to-purple-700 flex items-center justify-center">
+                        <i class="fa-solid fa-code text-white text-4xl opacity-50"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-white mb-2">Advanced Web Dev</h3>
+                        <p class="text-slate-400 text-sm mb-4">Master modern frameworks and real-time systems.</p>
+                        <button onclick="window.app.joinLiveClass('Web Dev')" class="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-600">Start Session</button>
+                    </div>
+                </div>
+                <div class="card-dark rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border-none">
+                    <div class="h-32 bg-gradient-to-r from-emerald-600 to-teal-700 flex items-center justify-center">
+                        <i class="fa-solid fa-database text-white text-4xl opacity-50"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-white mb-2">Database Architecture</h3>
+                        <p class="text-slate-400 text-sm mb-4">Scalable storage solutions with Firebase.</p>
+                        <button onclick="window.app.joinLiveClass('Database')" class="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-600">Start Session</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Room -->
+            <div id="live-room-interface" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+                    <div class="lg:col-span-2 flex flex-col gap-4">
+                        <div class="video-container flex-grow relative group shadow-lg">
+                            <video id="local-video" autoplay playsinline muted></video>
+                            <div class="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                                <i class="fa-solid fa-circle text-red-500 text-xs mr-2"></i> Live Broadcast
+                            </div>
+                            <div class="absolute inset-0 flex items-center justify-center bg-slate-900 z-10" id="camera-placeholder">
+                                <div class="text-center text-slate-400">
+                                    <i class="fa-solid fa-video-slash text-4xl mb-2"></i>
+                                    <p>Camera Off</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-4 justify-center mt-auto">
+                            <button onclick="window.app.toggleCamera()" class="p-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"><i class="fa-solid fa-video"></i></button>
+                            <button onclick="window.app.toggleMic()" class="p-4 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"><i class="fa-solid fa-microphone"></i></button>
+                            <button onclick="window.app.leaveClass()" class="p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"><i class="fa-solid fa-phone-slash"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="card-dark rounded-xl shadow-sm flex flex-col overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 bg-slate-800 font-bold text-white flex justify-between items-center">
+                            <span>Class Chat</span>
+                            <span class="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full border border-green-800">Live</span>
+                        </div>
+                        <div id="class-chat-stream" class="flex-grow p-4 overflow-y-auto space-y-3 bg-slate-900/50"></div>
+                        <div class="p-3 border-t border-slate-700">
+                            <form onsubmit="window.app.sendChatMessage(event)" class="flex gap-2">
+                                <input type="text" name="message" class="flex-grow bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 text-white" placeholder="Type a message..." autocomplete="off">
+                                <button type="submit" class="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"><i class="fa-solid fa-paper-plane"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: TEAM CHAT (PUBLIC) -->
+        <div id="view-chat" class="hidden fade-in native-view-container h-full flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-white">Team Chat</h2>
+                <div class="text-xs text-slate-400">Connected to Firebase</div>
+            </div>
+            <div class="flex-grow card-dark rounded-xl shadow-sm flex flex-col overflow-hidden h-[calc(100vh-180px)]">
+                <div id="team-chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4 bg-slate-900/50">
+                    <div class="text-center text-slate-500 text-sm py-10">Loading messages...</div>
+                </div>
+                <form onsubmit="window.app.sendChatMessage(event)" class="p-4 bg-slate-800 border-t border-slate-700 flex gap-2">
+                    <input type="text" name="message" class="flex-grow bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-white" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-bold">Send</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VIEW: PROFILE (PRIVATE) -->
+        <div id="view-profile" class="hidden fade-in native-view-container">
+            <div id="profile-content">
+                <div class="text-center py-20 text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-3xl"></i><br>Loading Profile...</div>
+            </div>
+        </div>
+
+        <!-- VIEW: MY TASKS - UPDATED TO task.html -->
+        <div id="view-task" class="hidden fade-in native-view-container" style="padding: 0; overflow: hidden;">
+            <iframe src="task.html" class="w-full h-full border-none" title="Task Manager"></iframe>
+        </div>
+
+        <!-- VIEW: ASSIGNMENTS (PUBLIC) -->
+        <div id="view-assignments" class="hidden fade-in native-view-container">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Assignments Registry</h2>
+                    <p class="text-slate-400 text-sm">Global task list. Anyone can assign work.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Creator Panel -->
+                <div class="lg:col-span-4">
+                    <div id="task-creator-panel" class="card-dark rounded-xl shadow-sm p-6 sticky top-24">
+                        <h3 class="text-sm font-bold uppercase text-slate-400 mb-4 tracking-wider">Assign New Task</h3>
+                        <form onsubmit="window.app.handleCreateTask(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Title</label>
+                                <input type="text" name="title" required class="w-full bg-slate-900 border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Assignee</label>
+                                <input type="text" name="assignee" required class="w-full bg-slate-900 border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white" placeholder="Member Name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Due Date</label>
+                                <input type="date" name="dueDate" required class="w-full bg-slate-900 border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Description</label>
+                                <textarea name="description" rows="3" class="w-full bg-slate-900 border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white"></textarea>
+                            </div>
+                            <button type="submit" id="task-submit-btn" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                                Dispatch Assignment
+                            </button>
+                        </form>
+                        <div id="guest-task-notice" class="hidden mt-4 p-4 bg-amber-900/30 border border-amber-700 rounded-lg text-amber-200 text-sm">
+                            <i class="fa-solid fa-lock mr-2"></i> Login to create tasks
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global List -->
+                <div class="lg:col-span-8">
+                    <div class="card-dark rounded-xl shadow-sm min-h-[500px] flex flex-col">
+                        <div class="p-4 border-b border-slate-700">
+                            <input type="text" id="filter-input" onkeyup="window.app.renderTasks()" placeholder="Filter assignments by name or title..." class="w-full pl-4 pr-4 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
+                        </div>
+                        <div id="global-task-list-container" class="divide-y divide-slate-700 p-2 flex-grow"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: REPORTS -->
+        <div id="view-report" class="hidden fade-in native-view-container space-y-6">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-white">My Live Analytics</h2>
+                <p id="user-analytics-id" class="text-slate-400 text-sm mt-1">Loading your unique dashboard...</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Task Completion Chart -->
+                <div class="card-dark p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-slate-200 mb-4">My Task Completion (Real-time)</h3>
+                    <div class="h-64 flex justify-center relative">
+                        <canvas id="statusChart"></canvas>
+                        <div id="chart-no-data" class="absolute inset-0 flex items-center justify-center text-slate-500 hidden">No Data Available</div>
+                    </div>
+                </div>
+                
+                <!-- Live Activity Graph (Lighting Effect) -->
+                <div class="card-dark p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-slate-200 mb-4">Real-time Activity Feed <span class="text-xs text-green-400 animate-pulse">(Live)</span></h3>
+                    <div class="h-64 flex justify-center">
+                        <canvas id="activityLightingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- User Activity Timeline -->
+                <div class="card-dark p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-slate-200 mb-4">Your Activity Timeline (24 Hours)</h3>
+                    <div class="h-64 flex justify-center">
+                        <canvas id="userActivityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Task Progress Chart -->
+                <div class="card-dark p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-slate-200 mb-4">Your Assigned Tasks Progress</h3>
+                    <div class="h-64 flex justify-center">
+                        <canvas id="userTaskProgressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User-Specific Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="card-dark p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
+                    <p class="text-slate-400 text-sm">Total Tasks</p>
+                    <p id="stat-total-tasks" class="text-2xl font-bold text-blue-400 mt-2">0</p>
+                </div>
+                <div class="card-dark p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                    <p class="text-slate-400 text-sm">Completed</p>
+                    <p id="stat-completed-tasks" class="text-2xl font-bold text-emerald-400 mt-2">0</p>
+                </div>
+                <div class="card-dark p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
+                    <p class="text-slate-400 text-sm">In Progress</p>
+                    <p id="stat-pending-tasks" class="text-2xl font-bold text-amber-400 mt-2">0</p>
+                </div>
+                <div class="card-dark p-4 rounded-xl shadow-sm border-l-4 border-purple-500">
+                    <p class="text-slate-400 text-sm">Feedback Sent</p>
+                    <p id="stat-feedback-count" class="text-2xl font-bold text-purple-400 mt-2">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: FEEDBACK (PUBLIC) -->
+        <div id="view-feedback" class="hidden fade-in native-view-container">
+             <div class="max-w-3xl mx-auto">
+                 <div class="text-center mb-8">
+                     <h2 class="text-2xl font-bold text-white">Community Feedback</h2>
+                     <p class="text-slate-400 text-sm">Real-time suggestions and issues.</p>
+                 </div>
+
+                 <div class="card-dark p-8 rounded-xl shadow-sm mb-8">
+                    <form onsubmit="window.app.handleFeedback(event)" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" name="name" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-white" placeholder="Name (Optional)">
+                            <select name="category" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                                <option>Suggestion</option>
+                                <option>Issue</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <textarea name="message" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm h-32 outline-none focus:ring-2 focus:ring-blue-500 text-white" placeholder="Your message..."></textarea>
+                        <button type="submit" class="w-full bg-slate-700 text-white font-bold py-2.5 rounded-lg hover:bg-slate-600 transition-colors border border-slate-600">
+                            Submit Feedback
+                        </button>
+                    </form>
+                 </div>
+                 
+                 <h3 class="font-bold text-slate-300 mb-4">Recent Submissions</h3>
+                 <div id="feedback-stream" class="space-y-4 pb-10">
+                     <div class="text-center text-slate-500 py-4">Loading stream...</div>
+                 </div>
+             </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // --- CUSTOM CONFIG PROVIDED BY USER ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyByNguF8LnWae1tehQFT3f0TGRsRtst-lk",
+          authDomain: "aiml-59e44.firebaseapp.com",
+          projectId: "aiml-59e44",
+          storageBucket: "aiml-59e44.appspot.com",
+          messagingSenderId: "495020918333",
+          appId: "1:495020918333:web:c6ed2308e89ad15d1f0c54"
+        };
+        
+        const appId = "aiml-59e44";
+        
+        // --- INIT ---
+        let auth, db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (e) { console.error("Firebase Init Error:", e); }
+
+        // --- STATE ---
+        let allTasks = [];
+        let allFeedbacks = [];
+        let allChats = [];
+        let allNotes = [];
+        let allResources = [];
+        let currentUser = null;
+        let isUILoggedIn = false;
+        let currentUsername = "Guest";
+        let mediaStream = null;
+        let timerInterval = null;
+        let timeLeft = 60 * 60;
+
+        // Profile State
+        let currentProfile = null;
+        let isProfileEditing = false;
+        let isProfileSaving = false;
+        const defaultProfile = {
+            displayName: "New User",
+            title: "Member",
+            course: "General",
+            location: "Unknown",
+            bio: "I am using Cortex Workspace.",
+            avatarUrl: "", // Now handled by UI Avatars if empty
+            coverUrl: "https://images.unsplash.com/photo-1557683316-973673baf926?w=1500",
+            website: "",
+            github: "",
+            linkedin: "",
+            experience: [],
+            projects: [],
+            certificates: [],
+            skills: ["Communication", "Teamwork"]
+        };
+        
+        // Initialize currentProfile with default immediately
+        currentProfile = { ...defaultProfile };
+
+        // --- UTILS ---
+        const fileToBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
+        const escapeHtml = (str) => {
+            return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]) : '';
+        };
+
+        // --- GUEST IDENTITY MANAGEMENT ---
+        const guestIdentity = {
+            getGuestName() {
+                const stored = localStorage.getItem('cortex_guest_name');
+                return stored || 'Guest';
+            },
+            setGuestName(name) {
+                localStorage.setItem('cortex_guest_name', name || 'Guest');
+                currentUsername = name || 'Guest';
+            },
+            getGuestAvatar() {
+                const name = this.getGuestName();
+                return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&bold=true`;
+            },
+            isGuest() {
+                return !currentUser;
+            }
+        };
+
+        // --- DEVICE AUTO-LOGIN MANAGEMENT ---
+        const deviceStorage = {
+            generateDeviceId() {
+                let deviceId = localStorage.getItem('cortex_device_id');
+                if (!deviceId) {
+                    deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                    localStorage.setItem('cortex_device_id', deviceId);
+                }
+                return deviceId;
+            },
+            
+            saveUserCredentials(email, password) {
+                localStorage.setItem('cortex_device_id', this.generateDeviceId());
+                localStorage.setItem('cortex_remembered_email', email);
+                localStorage.setItem('cortex_remembered_password', password);
+                localStorage.setItem('cortex_auto_login_enabled', 'true');
+            },
+            
+            getRememberedCredentials() {
+                const email = localStorage.getItem('cortex_remembered_email');
+                const password = localStorage.getItem('cortex_remembered_password');
+                const isEnabled = localStorage.getItem('cortex_auto_login_enabled') === 'true';
+                
+                if (email && password && isEnabled) {
+                    return { email, password };
+                }
+                return null;
+            },
+            
+            clearRememberedCredentials() {
+                localStorage.removeItem('cortex_remembered_email');
+                localStorage.removeItem('cortex_remembered_password');
+                localStorage.removeItem('cortex_auto_login_enabled');
+            },
+            
+            hasRememberedUser() {
+                return localStorage.getItem('cortex_auto_login_enabled') === 'true' && 
+                       localStorage.getItem('cortex_remembered_email') !== null;
+            }
+        };
+
+        // --- MOCK DATA GENERATORS FOR MULTI-USER FORECAST ---
+        const mockUsers = ['Alex Chen', 'Jordan Smith', 'Casey Lee', 'Morgan White', 'Riley Blue', 'Taylor Green'];
+        const mockMessages = [
+            'Just completed the advanced web dev course!',
+            'Anyone available for pair programming?',
+            'Great discussion in the focus zone today',
+            'New project deployed successfully 🚀',
+            'Looking for feedback on my latest work',
+            'Does anyone have resources on React hooks?',
+            'Team meeting went really well',
+            'Excited to start the new assignment!'
+        ];
+
+        // --- APP CONTROLLER ---
+        window.app = {
+            authMode: 'login',
+
+            init() {
+                const viewHome = document.getElementById('view-home');
+                if (viewHome) viewHome.classList.add('hidden');
+                
+                // Initialize device
+                deviceStorage.generateDeviceId();
+                
+                // Initialize guest identity
+                if (guestIdentity.isGuest()) {
+                    currentUsername = guestIdentity.getGuestName();
+                }
+                
+                // Call Mock Volume here
+                this.renderAllMocks();
+                
+                // Show splash screen with animation, then proceed with auth check
+                const splashScreen = document.getElementById('splash-screen');
+                const loginModal = document.getElementById('login-modal');
+                const welcomeBackModal = document.getElementById('welcome-back-modal');
+                
+                if (splashScreen) {
+                    // Splash screen is visible for 2.8 seconds (animation duration)
+                    setTimeout(() => {
+                        splashScreen.style.display = 'none';
+                        
+                        // Check for remembered user and show welcome back screen
+                        if (deviceStorage.hasRememberedUser()) {
+                            const creds = deviceStorage.getRememberedCredentials();
+                            if (welcomeBackModal) {
+                                const emailDisplay = document.getElementById('welcome-email-display');
+                                if (emailDisplay) emailDisplay.textContent = creds.email;
+                                welcomeBackModal.classList.remove('hidden');
+                            }
+                        } else if (loginModal) {
+                            loginModal.classList.remove('hidden');
+                        }
+                    }, 2800);
+                } else {
+                    // If no splash screen, proceed with auth check immediately
+                    if (deviceStorage.hasRememberedUser()) {
+                        const creds = deviceStorage.getRememberedCredentials();
+                        if (welcomeBackModal) {
+                            const emailDisplay = document.getElementById('welcome-email-display');
+                            if (emailDisplay) emailDisplay.textContent = creds.email;
+                            welcomeBackModal.classList.remove('hidden');
+                        }
+                    } else if (loginModal) {
+                        loginModal.classList.remove('hidden');
+                    }
+                }
+                
+                if (auth) {
+                    this.setupAuthListener();
+                }
+            },
+
+            setupAuthListener() {
+                onAuthStateChanged(auth, (user) => {
+                    const guestActions = document.getElementById('header-guest-actions');
+                    const userProfile = document.getElementById('header-user-profile');
+                    const loginModal = document.getElementById('login-modal');
+
+                    if (user) {
+                        // User is signed in.
+                        currentUser = user;
+                        // Use displayName if available, fallback to email part
+                        currentUsername = user.displayName || user.email.split('@')[0];
+                        
+                        // Update UI elements
+                        const navUserName = document.getElementById('nav-user-name');
+                        if (navUserName) navUserName.textContent = currentUsername;
+                        
+                        const userAvatar = document.getElementById('user-avatar');
+                        // Use UI Avatars by default based on username
+                        if (userAvatar) userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUsername)}&background=3b82f6&color=fff&bold=true`;
+                        
+                        // Hide Modal & Unlock
+                        if (loginModal) loginModal.classList.add('hidden');
+                        const welcomeBackModal = document.getElementById('welcome-back-modal');
+                        if (welcomeBackModal) welcomeBackModal.classList.add('hidden');
+                        const loadingAnimation = document.getElementById('loading-animation');
+                        if (loadingAnimation) loadingAnimation.classList.add('hidden');
+                        if (guestActions) guestActions.classList.add('hidden');
+                        if (userProfile) userProfile.classList.remove('hidden');
+                        const disconnectBtn = document.getElementById('header-disconnect-btn');
+                        if (disconnectBtn) disconnectBtn.classList.remove('hidden');
+                        isUILoggedIn = true;
+                        
+                        // Show login success popup
+                        this.showLoginSuccessPopup(currentUsername);
+                        
+                        // START DATA SYNCS (Guard Clause enforced)
+                        if(currentUser) {
+                            window.app.startDataSync();
+                            window.app.initProfile(); 
+                        }
+                        
+                        const viewHome = document.getElementById('view-home');
+                        if(viewHome && viewHome.classList.contains('hidden')) {
+                            window.app.showView('home');
+                        }
+                        window.app.showNotification(`Welcome, ${currentUsername}`, 'success');
+                    } else {
+                        currentUser = null;
+                        isUILoggedIn = false;
+                        const disconnectBtn = document.getElementById('header-disconnect-btn');
+                        if (disconnectBtn) disconnectBtn.classList.add('hidden');
+                        
+                        // GUEST MODE: Render the mock forecast
+                        window.app.renderAllMocks();
+                        this.showNotification("Guest Mode: Content is restricted.", "info");
+                    }
+                });
+            },
+
+            toggleSidebar() {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+                document.getElementById('main-frame').classList.toggle('collapsed');
+            },
+
+            showView(viewId) {
+                // We let them SEE the view (Dashboard, Assignments, etc.) 
+                // but the content will be the blurred mock data generated by renderAllMocks()
+                
+                document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+                document.getElementById(`link-${viewId}`)?.classList.add('active');
+
+                // Hide all views
+                const views = ['home', 'task', 'assignments', 'report', 'feedback', 'profile', 'courses', 'chat', 'notes', 'library', 'focus'];
+                views.forEach(id => document.getElementById(`view-${id}`)?.classList.add('hidden'));
+
+                // Show target view
+                const target = document.getElementById(`view-${viewId}`);
+                if (target) target.classList.remove('hidden');
+                
+                // Apply blur to task, assignments, and report views for guests
+                if (viewId === 'task' || viewId === 'assignments' || viewId === 'report') {
+                    if (!currentUser) {
+                        // Guest: apply blur to hide content but show frame
+                        target.classList.add('blur-mock');
+                        target.style.pointerEvents = 'none';  // Disable interactions
+                        this.showNotification("Content is restricted for guests. Please login to access.", "info");
+                    } else {
+                        // Real user: remove blur and enable interactions
+                        target.classList.remove('blur-mock');
+                        target.style.pointerEvents = 'auto';
+                    }
+                }
+
+                // Action Logic: If guest clicks "Chat" or "Profile", prompt them
+                if (!currentUser && (viewId === 'chat' || viewId === 'profile')) {
+                    this.showNotification("Login required to interact with this section", "error");
+                    document.getElementById('login-modal')?.classList.remove('hidden');
+                }
+                
+                // UPDATE ASSIGNMENTS VIEW: Show/hide creator panel for guests
+                if (viewId === 'assignments') {
+                    this.updateAssignmentsView();
+                    this.renderTasks();
+                }
+                
+                // Instant profile rendering
+                if (viewId === 'profile') {
+                    this.renderProfile();
+                }
+            },
+
+            updateAssignmentsView() {
+                const creatorPanel = document.getElementById('task-creator-panel');
+                const guestNotice = document.getElementById('guest-task-notice');
+                const submitBtn = document.getElementById('task-submit-btn');
+                const taskForm = creatorPanel?.querySelector('form');
+                
+                if (!currentUser) {
+                    // GUEST MODE: Disable form and show notice
+                    if (creatorPanel) creatorPanel.style.opacity = '0.6';
+                    if (taskForm) {
+                        const inputs = taskForm.querySelectorAll('input, textarea');
+                        inputs.forEach(input => input.disabled = true);
+                    }
+                    if (submitBtn) submitBtn.disabled = true;
+                    if (guestNotice) guestNotice.classList.remove('hidden');
+                } else {
+                    // REAL USER: Enable form and hide notice
+                    if (creatorPanel) creatorPanel.style.opacity = '1';
+                    if (taskForm) {
+                        const inputs = taskForm.querySelectorAll('input, textarea');
+                        inputs.forEach(input => input.disabled = false);
+                    }
+                    if (submitBtn) submitBtn.disabled = false;
+                    if (guestNotice) guestNotice.classList.add('hidden');
+                }
+            },
+
+            setAuthMode(mode) {
+                this.authMode = mode;
+                
+                // Show form container and hide mode selector
+                const modeSelector = document.getElementById('auth-mode-selector');
+                const formContainer = document.getElementById('auth-form-container');
+                if(modeSelector) modeSelector.classList.add('hidden');
+                if(formContainer) formContainer.classList.remove('hidden');
+                
+                const btnLogin = document.getElementById('tab-login');
+                const btnSignup = document.getElementById('tab-signup');
+                const submitBtn = document.getElementById('auth-submit-btn');
+                const nameField = document.getElementById('auth-name-container');
+                const nameInput = document.querySelector('input[name="displayName"]');
+                
+                if(mode === 'login') {
+                    btnLogin.className = "flex-1 py-2 rounded-md text-sm font-bold transition-all bg-slate-700 text-white shadow";
+                    btnSignup.className = "flex-1 py-2 rounded-md text-sm font-bold text-slate-400 transition-all hover:text-white";
+                    submitBtn.textContent = "Login to Account";
+                    
+                    // Hide name field and remove required attribute
+                    if(nameField) nameField.classList.add('hidden');
+                    if(nameInput) nameInput.removeAttribute('required');
+                } else {
+                    btnLogin.className = "flex-1 py-2 rounded-md text-sm font-bold text-slate-400 transition-all hover:text-white";
+                    btnSignup.className = "flex-1 py-2 rounded-md text-sm font-bold transition-all bg-slate-700 text-white shadow";
+                    submitBtn.textContent = "Create New Account";
+                    
+                    // Show name field and set required attribute
+                    if(nameField) nameField.classList.remove('hidden');
+                    if(nameInput) nameInput.setAttribute('required', 'true');
+                }
+            },
+
+            backToModeSelector() {
+                const modeSelector = document.getElementById('auth-mode-selector');
+                const formContainer = document.getElementById('auth-form-container');
+                if(modeSelector) modeSelector.classList.remove('hidden');
+                if(formContainer) formContainer.classList.add('hidden');
+            },
+
+            closeLoginModal() {
+                document.getElementById('login-modal').classList.add('hidden');
+                this.showNotification("Modal Closed", "info");
+            },
+
+            continueAsGuest() {
+                // Show guest identity setup with option to change name anytime
+                const guestName = prompt("Enter your guest username (or press Cancel for default):", guestIdentity.getGuestName());
+                if (guestName !== null) {
+                    guestIdentity.setGuestName(guestName.trim() || 'Guest');
+                }
+                
+                // Update UI with guest identity
+                const navUserName = document.getElementById('nav-user-name');
+                if (navUserName) navUserName.textContent = guestIdentity.getGuestName() + ' (Guest)';
+                
+                const userAvatar = document.getElementById('user-avatar');
+                if (userAvatar) userAvatar.src = guestIdentity.getGuestAvatar();
+                
+                // Close modal and render guest content
+                document.getElementById('login-modal').classList.add('hidden');
+                this.backToModeSelector(); // Reset to mode selector
+                this.showNotification(`Welcome, ${guestIdentity.getGuestName()}! You can switch anytime with the Disconnect button.`, "info");
+                this.renderAllMocks();
+            },
+
+            switchGuestName() {
+                // Allow guests to change their username anytime
+                const newName = prompt("Enter new guest username:", guestIdentity.getGuestName());
+                if (newName !== null && newName.trim()) {
+                    guestIdentity.setGuestName(newName.trim());
+                    
+                    // Update UI
+                    const navUserName = document.getElementById('nav-user-name');
+                    if (navUserName) navUserName.textContent = newName + ' (Guest)';
+                    
+                    const userAvatar = document.getElementById('user-avatar');
+                    if (userAvatar) userAvatar.src = guestIdentity.getGuestAvatar();
+                    
+                    this.showNotification(`Welcome, ${newName}! Your guest name has been updated.`, "success");
+                }
+            },
+
+            async handleAuth(e) {
+                e.preventDefault();
+                const name = e.target.displayName.value.trim();
+                const email = e.target.email.value.trim();
+                const password = e.target.password.value;
+                const errorDiv = document.getElementById('login-error');
+                const btn = document.getElementById('auth-submit-btn');
+                
+                if(errorDiv) errorDiv.classList.add('hidden');
+                if(btn) {
+                    btn.textContent = "Processing...";
+                    btn.disabled = true;
+                }
+
+                try {
+                    if (this.authMode === 'signup') {
+                        // Sign Up Flow
+                        const cred = await createUserWithEmailAndPassword(auth, email, password);
+                        // Update Auth Profile
+                        await updateProfile(cred.user, { displayName: name });
+                        // Save Metadata
+                        await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'metadata'), {
+                            username: name,
+                            email: email,
+                            joinedAt: new Date().toISOString()
+                        });
+                        // Initialize default profile data
+                        // NOTE: Using UID for strictly private path compliance
+                        const docRef = doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'data');
+                        await setDoc(docRef, { ...defaultProfile, displayName: name, email: email }, { merge: true });
+                        deviceStorage.saveUserCredentials(email, password);
+
+                    } else {
+                        // Login Flow
+                        await signInWithEmailAndPassword(auth, email, password);
+                        deviceStorage.saveUserCredentials(email, password);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    if(errorDiv) {
+                        errorDiv.textContent = error.message;
+                        errorDiv.classList.remove('hidden');
+                    }
+                    if(btn) {
+                        btn.textContent = this.authMode === 'login' ? "Login to Account" : "Create New Account";
+                        btn.disabled = false;
+                    }
+                }
+            },
+            
+            logout() {
+                // If guest, show login modal instead of logging out
+                if (!currentUser) {
+                    this.showNotification("Choose your next action", "info");
+                    this.backToModeSelector();
+                    document.getElementById('login-modal').classList.remove('hidden');
+                    return;
+                }
+                
+                // If real user, perform actual logout
+                signOut(auth).then(() => {
+                    this.showNotification("Logged out successfully", "success");
+                    location.reload();
+                });
+            },
+
+            proceedWithAutoLogin() {
+                const loadingAnimation = document.getElementById('loading-animation');
+                const welcomeBackModal = document.getElementById('welcome-back-modal');
+                if (loadingAnimation) loadingAnimation.classList.remove('hidden');
+                if (welcomeBackModal) welcomeBackModal.classList.add('hidden');
+                const creds = deviceStorage.getRememberedCredentials();
+                if (!creds) {
+                    this.showNotification("Credentials not found", "error");
+                    if (loadingAnimation) loadingAnimation.classList.add('hidden');
+                    return;
+                }
+                setTimeout(async () => {
+                    try {
+                        await signInWithEmailAndPassword(auth, creds.email, creds.password);
+                    } catch (error) {
+                        console.error('Auto-login failed:', error);
+                        this.showNotification('Auto-login failed', 'error');
+                        if (loadingAnimation) loadingAnimation.classList.add('hidden');
+                        if (welcomeBackModal) welcomeBackModal.classList.remove('hidden');
+                    }
+                }, 500);
+            },
+
+            rejectAutoLogin() {
+                deviceStorage.clearRememberedCredentials();
+                const welcomeBackModal = document.getElementById('welcome-back-modal');
+                const loginModal = document.getElementById('login-modal');
+                if (welcomeBackModal) welcomeBackModal.classList.add('hidden');
+                if (loginModal) loginModal.classList.remove('hidden');
+                this.backToModeSelector();
+                this.showNotification('Choose your login method', 'info');
+            },
+
+            disconnect() {
+                deviceStorage.clearRememberedCredentials();
+                if (currentUser) {
+                    signOut(auth).then(() => {
+                        this.showNotification('Disconnected successfully', 'success');
+                        setTimeout(() => location.reload(), 500);
+                    });
+                } else {
+                    this.showNotification('All saved data cleared', 'success');
+                    setTimeout(() => location.reload(), 500);
+                }
+            },
+
+            renderAllMocks() {
+                // Render mock cards for standard containers
+                const sections = ['notes-grid', 'resource-list', 'global-task-list-container', 'feedback-stream'];
+                
+                sections.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    
+                    let mockHtml = '';
+                    const count = Math.floor(Math.random() * 4) + 5; // Generates 5 to 8 cards
+
+                    for (let i = 0; i < count; i++) {
+                        mockHtml += `
+                <div class="card-dark p-4 rounded-xl border border-slate-700/50 mb-4 blur-mock">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-700"></div>
+                        <div class="w-24 skeleton-text"></div>
+                    </div>
+                    <div class="skeleton-text w-full"></div>
+                    <div class="skeleton-text w-3/4"></div>
+                </div>
+            `;
+                    }
+                    el.innerHTML = mockHtml;
+                });
+                
+                // Render multi-user mock chat messages
+                this.renderMockTeamChat();
+            },
+
+            renderMockTeamChat() {
+                // Multi-user forecast for Team Chat
+                const container = document.getElementById('team-chat-messages');
+                if (!container) return;
+                
+                let chatHtml = '';
+                const messageCount = Math.floor(Math.random() * 8) + 8; // 8-15 messages
+                
+                for (let i = 0; i < messageCount; i++) {
+                    const user = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+                    const message = mockMessages[Math.floor(Math.random() * mockMessages.length)];
+                    const timestamp = new Date(Date.now() - Math.random() * 3600000).toLocaleTimeString();
+                    
+                    chatHtml += `
+                    <div class="flex flex-col items-start">
+                        <div class="bg-slate-800 border border-slate-700 px-4 py-2 rounded-lg shadow-sm max-w-md blur-mock">
+                            <div class="text-xs font-bold text-slate-500 mb-1">${escapeHtml(user)}</div>
+                            <div class="text-sm text-slate-300">${escapeHtml(message)}</div>
+                        </div>
+                        <div class="text-[10px] text-slate-600 mt-1 mb-2">${timestamp}</div>
+                    </div>
+                `;
+                }
+                
+                container.innerHTML = chatHtml;
+            },
+
+            startDataSync() {
+                // Firebase Security Guard
+                if (!currentUser) {
+                    console.warn("Guest detected: Network sync disabled.");
+                    return;
+                }
+
+                // Your existing onSnapshot listeners follow below...
+                const permissionError = (error) => console.error("Firestore Sync Error:", error);
+
+                // Tasks (Assignments - PUBLIC)
+                const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+                onSnapshot(tasksRef, (snapshot) => {
+                    allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                    this.renderTasks();
+                    this.renderCharts(); 
+                }, permissionError);
+
+                // Feedback (PUBLIC)
+                const feedbackRef = collection(db, 'artifacts', appId, 'public', 'data', 'feedbacks');
+                onSnapshot(feedbackRef, (snapshot) => {
+                    allFeedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allFeedbacks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    this.renderFeedbackStream();
+                }, permissionError);
+
+                // TEAM CHAT (PUBLIC)
+                const chatRef = collection(db, 'artifacts', appId, 'public', 'data', 'chats');
+                onSnapshot(chatRef, (snapshot) => {
+                    allChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allChats.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    this.renderChatStream(); 
+                    this.renderTeamChat(); 
+                }, permissionError);
+
+                // Public Notes (Updated: Notes for all)
+                const notesRef = collection(db, 'artifacts', appId, 'public', 'data', 'notes');
+                onSnapshot(notesRef, (snapshot) => {
+                    allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allNotes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    this.renderNotes();
+                }, permissionError);
+
+                // Resources (Library - PUBLIC)
+                const libraryRef = collection(db, 'artifacts', appId, 'public', 'data', 'resources');
+                onSnapshot(libraryRef, (snapshot) => {
+                    allResources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allResources.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    this.renderResources();
+                    this.renderCharts(); // Real-time update of charts
+                }, permissionError);
+
+                // Start live analytics updates
+                this.startLiveAnalytics();
+            },
+
+            // --- PROFILE LOGIC (STRICTLY PRIVATE) ---
+            initProfile() {
+                if(!currentUser) return;
+                
+                // Initialize with default profile immediately
+                if (!currentProfile) {
+                    currentProfile = { ...defaultProfile, email: currentUser.email };
+                }
+                
+                // Use UID instead of sanitized email for safer/strict pathing
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'data');
+                
+                onSnapshot(docRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        // Load existing
+                        currentProfile = { ...defaultProfile, ...snapshot.data() };
+                        isProfileEditing = false;
+                    } else {
+                        // Create new
+                        currentProfile = { ...defaultProfile, email: currentUser.email };
+                        isProfileEditing = true;
+                    }
+                    if(document.getElementById('view-profile') && !document.getElementById('view-profile').classList.contains('hidden')) {
+                        this.renderProfile();
+                    }
+                });
+            },
+
+            async saveProfile() {
+                if (!currentUser) return;
+                isProfileSaving = true;
+                this.renderProfile();
+
+                try {
+                    // Use UID for strict path
+                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'data');
+                    const dataToSave = JSON.parse(JSON.stringify(currentProfile));
+                    await setDoc(docRef, { ...dataToSave, lastUpdated: serverTimestamp() }, { merge: true });
+                    isProfileEditing = false;
+                    this.showNotification("Profile Saved", "success");
+                } catch(err) {
+                    console.error(err);
+                    this.showNotification("Save Failed", "error");
+                } finally {
+                    isProfileSaving = false;
+                    this.renderProfile();
+                }
+            },
+
+            toggleProfileEdit() {
+                isProfileEditing = !isProfileEditing;
+                this.renderProfile();
+            },
+
+            updateProfileField(field, value) { currentProfile[field] = value; },
+            updateProfileSkills(val) { currentProfile.skills = val.split(',').map(s => s.trim()); },
+            
+            // Profile Array Helpers
+            addProfItem(arrName, item) {
+                currentProfile[arrName].push({ id: Date.now(), ...item });
+                this.renderProfile();
+            },
+            removeProfItem(arrName, id) {
+                currentProfile[arrName] = currentProfile[arrName].filter(x => x.id !== id);
+                this.renderProfile();
+            },
+            updateProfItem(arrName, id, field, val) {
+                currentProfile[arrName] = currentProfile[arrName].map(x => x.id === id ? {...x, [field]: val} : x);
+            },
+
+            renderProfile() {
+                const container = document.getElementById('view-profile');
+                if (!container) return;
+                
+                // Ensure currentProfile is initialized
+                if (!currentProfile) {
+                    currentProfile = { ...defaultProfile };
+                }
+
+                // Ensure all arrays exist
+                if (!currentProfile.experience) currentProfile.experience = [];
+                if (!currentProfile.certificates) currentProfile.certificates = [];
+                if (!currentProfile.projects) currentProfile.projects = [];
+                if (!currentProfile.skills) currentProfile.skills = ["Communication", "Teamwork"];
+
+                // --- HTML Generators for Profile ---
+                const expHTML = currentProfile.experience.map(exp => `
+                    <div class="relative pl-6 border-l-2 border-slate-600 mb-4 group">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-4 border-slate-800 bg-blue-500"></div>
+                        ${isProfileEditing ? `
+                            <div class="grid gap-2 bg-slate-800 p-3 rounded border border-slate-600">
+                                <input value="${exp.role}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'role', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-sm font-bold" placeholder="Role">
+                                <input value="${exp.company}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'company', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-sm" placeholder="Company">
+                                <input value="${exp.year}" oninput="window.app.updateProfItem('experience', ${exp.id}, 'year', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-xs" placeholder="Year">
+                                <button onclick="window.app.removeProfItem('experience', ${exp.id})" class="text-red-400 text-xs text-right hover:underline">Remove</button>
+                            </div>
+                        ` : `
+                            <div>
+                                <h4 class="font-bold text-slate-200">${exp.role}</h4>
+                                <div class="text-sm text-slate-400">${exp.company} <span class="text-xs bg-slate-700 px-2 rounded ml-2 text-white">${exp.year}</span></div>
+                            </div>
+                        `}
+                    </div>
+                `).join('');
+
+                const certHTML = currentProfile.certificates.map(c => `
+                    <div class="flex items-center gap-3 bg-slate-800 border border-slate-700 p-3 rounded-lg mb-2">
+                        <i class="fa-solid fa-award text-yellow-500 text-xl"></i>
+                        ${isProfileEditing ? `
+                            <div class="flex-1 grid gap-1">
+                                <input value="${c.name}" oninput="window.app.updateProfItem('certificates', ${c.id}, 'name', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-sm font-bold" placeholder="Name">
+                                <input value="${c.issuer}" oninput="window.app.updateProfItem('certificates', ${c.id}, 'issuer', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-xs" placeholder="Issuer">
+                                <button onclick="window.app.removeProfItem('certificates', ${c.id})" class="text-red-400 text-xs text-left">Delete</button>
+                            </div>
+                        ` : `
+                            <div>
+                                <div class="font-bold text-sm text-slate-200">${c.name}</div>
+                                <div class="text-xs text-slate-400">${c.issuer} • ${c.year}</div>
+                            </div>
+                        `}
+                    </div>
+                `).join('');
+
+                const projHTML = currentProfile.projects.map(p => `
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 mb-3 hover:shadow-sm transition-shadow">
+                        ${isProfileEditing ? `
+                            <div class="grid gap-2">
+                                <input value="${p.title}" oninput="window.app.updateProfItem('projects', ${p.id}, 'title', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded font-bold" placeholder="Title">
+                                <textarea oninput="window.app.updateProfItem('projects', ${p.id}, 'desc', this.value)" class="border border-slate-600 bg-slate-900 text-white p-1 rounded text-sm" rows="2">${p.desc}</textarea>
+                                <input value="${p.link}" oninput="window.app.updateProfItem('projects', ${p.id}, 'link', this.value)" class="border border-slate-600 bg-slate-900 text-blue-400 p-1 rounded text-xs" placeholder="Link URL">
+                                <button onclick="window.app.removeProfItem('projects', ${p.id})" class="text-red-400 text-xs text-right">Remove Project</button>
+                            </div>
+                        ` : `
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="font-bold text-slate-200 text-sm">${p.title}</div>
+                                    <div class="text-xs text-slate-400">${p.desc}</div>
+                                </div>
+                                ${p.link ? `<a href="${p.link}" target="_blank" class="text-blue-400 hover:text-blue-300"><i class="fa-solid fa-external-link-alt"></i></a>` : ''}
+                            </div>
+                        `}
+                    </div>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="max-w-5xl mx-auto pb-20">
+                        <!-- Cover -->
+                        <div class="h-48 bg-slate-800 rounded-t-2xl relative overflow-hidden group">
+                            <img src="${currentProfile.coverUrl}" class="w-full h-full object-cover opacity-80">
+                            ${isProfileEditing ? `<input value="${currentProfile.coverUrl}" oninput="window.app.updateProfileField('coverUrl', this.value)" class="absolute top-4 right-4 bg-black/50 text-white text-xs p-2 rounded border-none backdrop-blur-md w-64 placeholder-gray-300" placeholder="Cover Image URL">` : ''}
+                        </div>
+                        
+                        <div class="bg-slate-800 rounded-b-2xl shadow-sm border border-slate-700 p-6 md:p-8 relative">
+                            <div class="flex flex-col md:flex-row gap-6">
+                                <!-- Avatar -->
+                                <div class="-mt-20 shrink-0 relative">
+                                    <img src="${currentProfile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentProfile.displayName)}&background=3b82f6&color=fff&bold=true`}" class="w-32 h-32 rounded-full border-4 border-slate-800 shadow-md object-cover bg-slate-700">
+                                    ${isProfileEditing ? `<div class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg text-xs cursor-help" title="Paste URL in Edit Mode"><i class="fa-solid fa-camera"></i></div>` : ''}
+                                </div>
+                                
+                                <!-- Header Info -->
+                                <div class="flex-1 pt-2">
+                                    <div class="flex justify-between items-start">
+                                        <div class="w-full mr-4">
+                                            ${isProfileEditing ? `
+                                                <input value="${currentProfile.displayName}" oninput="window.app.updateProfileField('displayName', this.value)" class="text-2xl font-bold text-white bg-transparent w-full border-b border-blue-500 outline-none mb-1" placeholder="Name">
+                                                <input value="${currentProfile.title}" oninput="window.app.updateProfileField('title', this.value)" class="text-slate-400 bg-transparent w-full border-b border-slate-600 outline-none mb-2" placeholder="Title">
+                                                <input value="${currentProfile.avatarUrl}" oninput="window.app.updateProfileField('avatarUrl', this.value)" class="text-xs text-slate-500 w-full bg-slate-900 border border-slate-700 p-1 rounded" placeholder="Custom Avatar URL (Optional)">
+                                            ` : `
+                                                <h1 class="text-3xl font-bold text-white">${currentProfile.displayName}</h1>
+                                                <p class="text-slate-400">${currentProfile.title}</p>
+                                            `}
+                                        </div>
+                                        <button onclick="${isProfileEditing ? 'window.app.saveProfile()' : 'window.app.toggleProfileEdit()'}" class="bg-slate-700 text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-slate-600 transition-all text-sm whitespace-nowrap border border-slate-600">
+                                            ${isProfileSaving ? '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving' : (isProfileEditing ? '<i class="fa-solid fa-save"></i> Save' : '<i class="fa-solid fa-pen"></i> Edit')}
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Meta -->
+                                    <div class="flex flex-wrap gap-3 mt-4 text-sm text-slate-400">
+                                        ${isProfileEditing ? `
+                                            <input value="${currentProfile.course}" oninput="window.app.updateProfileField('course', this.value)" class="bg-slate-900 border border-slate-700 text-white rounded px-2 py-1" placeholder="Course">
+                                            <input value="${currentProfile.location}" oninput="window.app.updateProfileField('location', this.value)" class="bg-slate-900 border border-slate-700 text-white rounded px-2 py-1" placeholder="Location">
+                                        ` : `
+                                            <span class="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-full border border-slate-700"><i class="fa-solid fa-graduation-cap text-blue-500"></i> ${currentProfile.course}</span>
+                                            <span class="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-full border border-slate-700"><i class="fa-solid fa-map-marker-alt text-blue-500"></i> ${currentProfile.location}</span>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-8 border-slate-700">
+
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <!-- Left Column -->
+                                <div class="space-y-8">
+                                    <section>
+                                        <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider mb-3">About</h3>
+                                        ${isProfileEditing ? `<textarea oninput="window.app.updateProfileField('bio', this.value)" class="w-full bg-slate-900 border border-slate-700 text-white rounded p-2 text-sm h-32">${currentProfile.bio}</textarea>` : `<p class="text-slate-300 text-sm leading-relaxed">${currentProfile.bio}</p>`}
+                                    </section>
+                                    
+                                    <section>
+                                        <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider mb-3">Connect</h3>
+                                        <div class="space-y-2">
+                                            ${['website', 'github', 'linkedin'].map(p => `
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-8 h-8 bg-slate-900 rounded flex items-center justify-center text-slate-400 border border-slate-700"><i class="fa-brands fa-${p === 'website' ? 'chrome' : p}"></i></div>
+                                                    ${isProfileEditing ? 
+                                                        `<input value="${currentProfile[p]}" oninput="window.app.updateProfileField('${p}', this.value)" class="flex-1 bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 text-xs" placeholder="${p} URL">` : 
+                                                        (currentProfile[p] ? `<a href="${currentProfile[p]}" target="_blank" class="text-sm text-blue-400 hover:underline truncate w-40">${p}</a>` : `<span class="text-xs text-slate-600 italic">Not added</span>`)
+                                                    }
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </section>
+
+                                    <section>
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Certifications</h3>
+                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('certificates', {name:'Cert Name', issuer:'Issuer', year:'2024'})" class="text-blue-500 text-xs"><i class="fa-solid fa-plus"></i></button>` : ''}
+                                        </div>
+                                        ${certHTML || '<div class="text-xs text-slate-600 italic">No certifications.</div>'}
+                                    </section>
+                                </div>
+
+                                <!-- Right Column -->
+                                <div class="lg:col-span-2 space-y-8">
+                                    <section>
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h3 class="font-bold text-white text-lg"><i class="fa-solid fa-briefcase text-blue-500 mr-2"></i> Experience</h3>
+                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('experience', {role:'Role', company:'Company', year:'2024'})" class="bg-slate-700 text-blue-400 border border-slate-600 px-3 py-1 rounded text-xs font-bold hover:bg-slate-600">Add Role</button>` : ''}
+                                        </div>
+                                        <div>${expHTML || '<div class="p-6 border-2 border-dashed border-slate-700 rounded-xl text-center text-slate-500">No experience listed.</div>'}</div>
+                                    </section>
+
+                                    <section>
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h3 class="font-bold text-white text-lg"><i class="fa-solid fa-layer-group text-blue-500 mr-2"></i> Projects</h3>
+                                            ${isProfileEditing ? `<button onclick="window.app.addProfItem('projects', {title:'Project Title', desc:'Description', link:''})" class="bg-slate-700 text-blue-400 border border-slate-600 px-3 py-1 rounded text-xs font-bold hover:bg-slate-600">Add Project</button>` : ''}
+                                        </div>
+                                        <div>${projHTML || '<div class="p-6 border-2 border-dashed border-slate-700 rounded-xl text-center text-slate-500">No projects showcase.</div>'}</div>
+                                    </section>
+
+                                    <section>
+                                        <h3 class="font-bold text-slate-500 uppercase text-xs tracking-wider mb-3">Skills</h3>
+                                        ${isProfileEditing ? 
+                                            `<textarea oninput="window.app.updateProfileSkills(this.value)" class="w-full bg-slate-900 border border-slate-700 text-white rounded p-2 text-sm">${currentProfile.skills.join(', ')}</textarea><p class="text-xs text-slate-500 mt-1">Comma separated</p>` : 
+                                            `<div class="flex flex-wrap gap-2">${currentProfile.skills.map(s => `<span class="px-3 py-1 bg-slate-900 text-slate-300 rounded-lg text-sm font-medium border border-slate-700">${s}</span>`).join('')}</div>`
+                                        }
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            // --- CHAT RENDERERS ---
+            renderTeamChat() {
+                const container = document.getElementById('team-chat-messages');
+                if(!container) return;
+                
+                const sortedChats = [...allChats].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                
+                container.innerHTML = sortedChats.map(c => {
+                    const isOwner = c.createdBy === currentUsername;
+                    const deleteBtn = isOwner ? `<button onclick="window.app.deleteChat('${c.id}')" class="text-red-500 hover:text-red-600 text-xs ml-2" title="Delete"><i class="fa-solid fa-trash"></i></button>` : '';
+                    return `
+                    <div class="flex flex-col ${c.user === currentUsername ? 'items-end' : 'items-start'} group">
+                        <div class="bg-white border ${c.user === currentUsername ? 'bg-blue-50 border-blue-200' : 'border-slate-200'} px-4 py-2 rounded-lg shadow-sm max-w-md flex items-start gap-2">
+                            <div>
+                                <div class="text-xs font-bold ${c.user === currentUsername ? 'text-blue-600' : 'text-slate-600'} mb-1">${escapeHtml(c.user)}</div>
+                                <div class="text-sm text-slate-700">${escapeHtml(c.message)}</div>
+                            </div>
+                            ${deleteBtn}
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1 mb-2">${new Date(c.timestamp).toLocaleTimeString()}</div>
+                    </div>
+                `}).join('');
+                container.scrollTop = container.scrollHeight;
+            },
+            
+            async deleteChat(id) {
+                const chat = allChats.find(c => c.id === id);
+                if (!chat) return;
+                if (chat.createdBy !== currentUsername) {
+                    this.showNotification("You can only delete your own messages", "error");
+                    return;
+                }
+                if(confirm("Delete this message?")) {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'chats', id));
+                        this.showNotification("Message deleted", "success");
+                    } catch(err) { console.error(err); }
+                }
+            },
+
+            renderChatStream() {
+                const container = document.getElementById('class-chat-stream');
+                if(container) {
+                    const sortedChats = [...allChats].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    container.innerHTML = sortedChats.slice(-20).map(c => `
+                        <div class="text-sm">
+                            <span class="font-bold text-slate-700">${escapeHtml(c.user)}:</span>
+                            <span class="text-slate-600">${escapeHtml(c.message)}</span>
+                        </div>
+                    `).join('');
+                    container.scrollTop = container.scrollHeight;
+                }
+            },
+
+            // --- STANDARD UTILS ---
+            renderTasks() {
+                const filterInput = document.getElementById('filter-input');
+                const filter = filterInput ? filterInput.value.toLowerCase() : '';
+                
+                // GUEST MODE: Show blurred mock forecast
+                if (!currentUser) {
+                    const blurClass = 'blur-mock';
+                    const myContainer = document.getElementById('my-task-list-container');
+                    if(myContainer) myContainer.innerHTML = `<div class="${blurClass} p-8 text-center text-slate-500">Your assigned tasks will appear here</div>`;
+                    
+                    const globalContainer = document.getElementById('global-task-list-container');
+                    if(globalContainer) {
+                        // Generate 4-6 mock tasks with blur
+                        const mockTasks = [
+                            { id: 'mock1', title: 'Complete Project Report', assignee: 'Alex Chen', dueDate: '2026-02-05', status: 'pending', description: 'Quarterly project summary' },
+                            { id: 'mock2', title: 'Code Review: API Updates', assignee: 'Jordan Smith', dueDate: '2026-02-03', status: 'pending', description: 'Review new endpoint implementations' },
+                            { id: 'mock3', title: 'Team Meeting Preparation', assignee: 'Casey Lee', dueDate: '2026-02-01', status: 'completed', description: 'Prepare agenda and slides' },
+                            { id: 'mock4', title: 'Database Optimization', assignee: 'Morgan White', dueDate: '2026-02-10', status: 'pending', description: 'Improve query performance' },
+                            { id: 'mock5', title: 'Documentation Update', assignee: 'Riley Blue', dueDate: '2026-02-07', status: 'pending', description: 'Update technical documentation' }
+                        ];
+                        globalContainer.innerHTML = `<div class="${blurClass}">` + mockTasks.map(t => this.createTaskCard(t, false)).join('') + `</div>`;
+                    }
+                    return;
+                }
+                
+                // REAL USER: Show actual data
+                const myTasks = allTasks.filter(t => t.assignee && t.assignee.toLowerCase().includes(currentUsername.toLowerCase()));
+                // Note: 'my-task-list-container' is removed in updated view-task, but function remains for safety/other views
+                const myContainer = document.getElementById('my-task-list-container');
+                if(myContainer) myContainer.innerHTML = myTasks.length ? myTasks.map(t => this.createTaskCard(t, true)).join('') : `<div class="p-8 text-center text-slate-500">No tasks assigned to you.</div>`;
+                
+                const globalTasks = allTasks.filter(t => (t.title && t.title.toLowerCase().includes(filter)) || (t.assignee && t.assignee.toLowerCase().includes(filter)));
+                const globalContainer = document.getElementById('global-task-list-container');
+                if(globalContainer) globalContainer.innerHTML = globalTasks.length ? globalTasks.map(t => this.createTaskCard(t, false)).join('') : `<div class="p-8 text-center text-slate-500">No matching records.</div>`;
+            },
+
+            toggleNoteInputs(type) {
+                const urlInput = document.getElementById('note-url-input');
+                const fileInput = document.getElementById('note-file-input');
+                if(urlInput) urlInput.classList.add('hidden');
+                if(fileInput) fileInput.classList.add('hidden');
+                
+                if(type === 'video' && urlInput) {
+                    urlInput.classList.remove('hidden');
+                } else if((type === 'image' || type === 'pdf') && fileInput) {
+                    fileInput.classList.remove('hidden');
+                }
+            },
+
+            async handleAddNote(e) {
+                e.preventDefault();
+                const f = e.target;
+                const type = f.type.value;
+                let mediaContent = null;
+
+                if (type === 'video') {
+                    mediaContent = f.mediaUrl.value;
+                } else if ((type === 'image' || type === 'pdf') && f.mediaFile.files[0]) {
+                    const file = f.mediaFile.files[0];
+                    if (file.size > 8000000) { 
+                        this.showNotification("File too large (Max 100000kb for sync)", "error");
+                        return;
+                    }
+                    mediaContent = await fileToBase64(file);
+                }
+
+                const newNote = {
+                    content: f.content.value.trim(),
+                    type: type,
+                    media: mediaContent,
+                    timestamp: new Date().toISOString(),
+                    createdBy: currentUsername || 'Anonymous',
+                    createdByUid: currentUser?.uid || 'guest'
+                };
+
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notes'), newNote);
+                    f.reset();
+                    this.toggleNoteInputs('text');
+                    this.showNotification("Note Saved", "success");
+                } catch(err) { console.error(err); }
+            },
+
+            renderNotes() {
+                const container = document.getElementById('notes-grid');
+                if(!container) return;
+                
+                if(allNotes.length === 0) {
+                      container.innerHTML = `<div class="text-center text-slate-500 col-span-full py-12">No notes yet. Add one above!</div>`;
+                      return;
+                }
+
+                container.innerHTML = allNotes.map((note) => {
+                    let mediaHtml = '';
+                    if (note.type === 'image' && note.media) {
+                        mediaHtml = `<div class="note-media"><img src="${note.media}" alt="Note image"></div>`;
+                    } else if (note.type === 'video' && note.media) {
+                        let embedUrl = note.media.replace("watch?v=", "embed/");
+                        mediaHtml = `<div class="note-media"><iframe src="${embedUrl}" frameborder="0" allowfullscreen></iframe></div>`;
+                    } else if (note.type === 'pdf' && note.media) {
+                         mediaHtml = `<div class="mt-3"><a href="${note.media}" download="note_attachment.pdf" class="flex items-center gap-2 text-red-400 bg-red-900/20 p-2 rounded-lg text-sm hover:bg-red-900/40"><i class="fa-solid fa-file-pdf"></i> Download Attached PDF</a></div>`;
+                    }
+                    
+                    const isOwner = note.createdBy === currentUsername;
+                    const deleteBtn = isOwner ? `<button onclick="window.app.deleteNote('${note.id}')" class="absolute top-2 right-2 text-red-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete"><i class="fa-solid fa-trash"></i></button>` : '';
+
+                    return `
+                        <div class="card-dark p-6 rounded-xl relative group shadow-sm hover:shadow-md transition-shadow">
+                            ${deleteBtn}
+                            <p class="text-slate-200 font-medium">${escapeHtml(note.content)}</p>
+                            ${mediaHtml}
+                            <div class="mt-4 text-xs text-slate-500 flex justify-between items-center border-t pt-2 border-slate-700">
+                                <div>
+                                    <span>${new Date(note.timestamp).toLocaleDateString()}</span>
+                                    <span class="ml-2 text-slate-600">by ${escapeHtml(note.createdBy || 'Unknown')}</span>
+                                </div>
+                                <span class="uppercase font-bold text-[10px] tracking-wider bg-slate-700 text-slate-300 px-2 py-1 rounded">${note.type}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            async deleteNote(id) {
+                const note = allNotes.find(n => n.id === id);
+                if (!note) return;
+                if (note.createdBy !== currentUsername) {
+                    this.showNotification("You can only delete your own notes", "error");
+                    return;
+                }
+                if(confirm("Delete this note?")) {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notes', id));
+                        this.showNotification("Note deleted", "success");
+                    } catch(err) { console.error(err); }
+                }
+            },
+
+            renderResources() {
+                const container = document.getElementById('resource-list');
+                if(!container) return;
+                if(allResources.length === 0) {
+                    container.innerHTML = `<div class="text-center text-slate-500 py-12">No resources shared yet.</div>`;
+                    return;
+                }
+                const icons = { 'article': 'fa-newspaper text-blue-500', 'video': 'fa-play-circle text-red-500', 'book': 'fa-book text-emerald-500', 'file': 'fa-file-arrow-down text-slate-400' };
+                container.innerHTML = allResources.map(res => {
+                    const isOwner = res.createdBy === currentUsername;
+                    const deleteBtn = isOwner ? `<button onclick="window.app.deleteResource('${res.id}')" class="text-red-500 hover:text-red-600 transition-colors ml-2" title="Delete"><i class="fa-solid fa-trash"></i></button>` : '';
+                    return `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-blue-300 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-xl">
+                                <i class="fa-solid ${icons[res.type] || 'fa-link'}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(res.title)}</h4>
+                                <div class="flex gap-2 text-xs text-slate-400 mt-0.5">
+                                    <span class="capitalize">${res.type}</span>
+                                    <span>•</span>
+                                    <span>Shared by ${escapeHtml(res.sharedBy)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="${escapeHtml(res.url)}" target="_blank" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                                <i class="fa-solid fa-external-link-alt"></i>
+                            </a>
+                            ${deleteBtn}
+                        </div>
+                    </div>
+                `}).join('');
+            },
+
+            renderFeedbackStream() {
+                const container = document.getElementById('feedback-stream');
+                if(!container) return;
+                if (allFeedbacks.length === 0) {
+                    container.innerHTML = `<div class="text-center text-slate-500 py-4">No feedback submitted yet.</div>`;
+                    return;
+                }
+                container.innerHTML = allFeedbacks.map(fb => {
+                    const canDelete = fb.name === currentUsername || currentUser?.email === fb.email;
+                    const deleteBtn = canDelete ? `<button onclick="event.stopPropagation(); window.app.deleteFeedback('${fb.id}')" class="text-red-500 hover:text-red-600 text-xs" title="Delete"><i class="fa-solid fa-trash"></i></button>` : '';
+                    return `
+                    <div class="card-dark p-4 rounded-xl shadow-sm fade-in border border-slate-700">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-slate-200 text-sm">${escapeHtml(fb.name)}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500">${new Date(fb.timestamp).toLocaleDateString()}</span>
+                                ${deleteBtn}
+                            </div>
+                        </div>
+                        <div class="text-xs font-semibold text-blue-400 mb-1 uppercase">${escapeHtml(fb.category)}</div>
+                        <p class="text-slate-400 text-sm">${escapeHtml(fb.message)}</p>
+                    </div>
+                `;}).join('');
+            },
+
+            async deleteFeedback(id) {
+                const feedback = allFeedbacks.find(f => f.id === id);
+                if (!feedback) return;
+                const canDelete = feedback.name === currentUsername || currentUser?.email === feedback.email;
+                if (!canDelete) {
+                    this.showNotification("You can only delete your own feedback", "error");
+                    return;
+                }
+                if(confirm("Delete this feedback?")) {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', id));
+                        this.showNotification("Feedback deleted", "success");
+                    } catch(err) { 
+                        console.error(err);
+                        this.showNotification("Error deleting feedback", "error");
+                    }
+                }
+            },
+
+            createTaskCard(task, isPersonal) {
+                const statusColor = task.status === 'completed' ? 'border-l-emerald-500' : 'border-l-amber-500';
+                const btnColor = task.status === 'completed' ? 'text-emerald-500' : 'text-slate-600 hover:text-blue-400';
+                const bgColor = 'bg-slate-800 hover:bg-slate-700'; // Dark mode card bg
+                const titleColor = task.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-200';
+                
+                const isOwner = task.createdBy === currentUsername;
+                const deleteBtn = isOwner ? `<button onclick="event.stopPropagation(); window.app.deleteTask('${task.id}')" class="text-red-500 hover:text-red-600 ml-2" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>` : '';
+                
+                return `
+                <div class="p-4 ${bgColor} transition-all flex items-start gap-4 border-l-4 ${statusColor} ${isPersonal ? 'shadow-sm rounded-lg mb-2 border border-slate-700' : ''}">
+                    <button onclick="event.stopPropagation(); window.app.toggleStatus('${task.id}', '${task.status}')" class="mt-1 text-xl ${btnColor}">
+                        <i class="fa-solid ${task.status === 'completed' ? 'fa-circle-check' : 'fa-circle'}"></i>
+                    </button>
+                    <div class="flex-grow">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold ${titleColor}">${escapeHtml(task.title)}</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-900 text-slate-400 uppercase border border-slate-700">${task.status}</span>
+                                ${deleteBtn}
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1 line-clamp-2">${escapeHtml(task.description)}</p>
+                        <div class="flex items-center gap-4 mt-3 text-xs text-slate-500">
+                            <span><i class="fa-solid fa-user mr-1"></i> ${escapeHtml(task.assignee)}</span>
+                            <span><i class="fa-solid fa-calendar mr-1"></i> ${task.dueDate}</span>
+                            <span class="ml-auto text-slate-600">by ${escapeHtml(task.createdBy || 'Unknown')}</span>
+                        </div>
+                    </div>
+                </div>`;
+            },
+
+            async deleteTask(id) {
+                const task = allTasks.find(t => t.id === id);
+                if (!task) return;
+                if (task.createdBy !== currentUsername) {
+                    this.showNotification("You can only delete your own tasks", "error");
+                    return;
+                }
+                if(confirm("Delete this task?")) {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', id));
+                        this.showNotification("Task deleted", "success");
+                    } catch(err) { console.error(err); }
+                }
+            },
+
+            async handleCreateTask(e) {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+                const newTask = {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    assignee: formData.get('assignee'),
+                    dueDate: formData.get('dueDate'),
+                    status: 'pending',
+                    createdAt: new Date().toISOString(),
+                    createdBy: currentUsername || 'Anonymous',
+                    createdByUid: currentUser?.uid || 'guest'
+                };
+
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'tasks'), newTask);
+                    this.showNotification("Task Assigned Successfully", "success");
+                    form.reset();
+                } catch(err) { console.error(err); }
+            },
+
+            async deleteResource(id) {
+                const resource = allResources.find(r => r.id === id);
+                if (!resource) return;
+                if (resource.createdBy !== currentUsername) {
+                    this.showNotification("You can only delete your own resources", "error");
+                    return;
+                }
+                if(confirm("Delete this resource?")) {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', id));
+                        this.showNotification("Resource deleted", "success");
+                    } catch(err) { console.error(err); }
+                }
+            },
+
+            async handleAddResource(e) {
+                e.preventDefault();
+                const f = e.target;
+                const newRes = {
+                    title: f.title.value,
+                    url: f.url.value,
+                    type: f.type.value,
+                    sharedBy: currentUsername,
+                    createdBy: currentUsername || 'Anonymous',
+                    createdByUid: currentUser?.uid || 'guest',
+                    timestamp: new Date().toISOString()
+                };
+                
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'resources'), newRes);
+                    f.reset();
+                    this.showNotification("Resource Shared", "success");
+                } catch(err) { console.error(err); }
+            },
+
+            async toggleStatus(id, current) {
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', id), {
+                        status: current === 'pending' ? 'completed' : 'pending'
+                    });
+                } catch(err) { console.error(err); }
+            },
+
+            async handleFeedback(e) {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+                const item = {
+                    name: formData.get('name') || 'Anonymous',
+                    category: formData.get('category'),
+                    message: formData.get('message'),
+                    timestamp: new Date().toISOString(),
+                    createdBy: currentUsername || 'Anonymous',
+                    email: currentUser?.email || null,
+                    uid: currentUser?.uid || null
+                };
+
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'feedbacks'), item);
+                    this.showNotification("Feedback Sent", "success");
+                    form.reset();
+                } catch(err) { console.error(err); }
+            },
+
+            // --- TIMER LOGIC ---
+            setTimerMode(minutes) {
+                this.timerPause();
+                timeLeft = minutes * 60;
+                this.updateTimerDisplay();
+            },
+            updateTimerDisplay() {
+                const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                const s = (timeLeft % 60).toString().padStart(2, '0');
+                const timerEl = document.getElementById('timer-display');
+                if(timerEl) timerEl.textContent = `${m}:${s}`;
+            },
+            timerStart() {
+                if(timerInterval) return;
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    this.updateTimerDisplay();
+                    if(timeLeft <= 0) {
+                        this.timerPause();
+                        this.showNotification("Focus Session Complete!", "success");
+                    }
+                }, 1000);
+            },
+            timerPause() {
+                if(timerInterval) clearInterval(timerInterval);
+                timerInterval = null;
+            },
+            timerReset() {
+                this.timerPause();
+                timeLeft = 25 * 60;
+                this.updateTimerDisplay();
+            },
+
+            // --- VIDEO CLASSROOM LOGIC ---
+            joinLiveClass(courseName) {
+                const el = document.getElementById('live-room-interface');
+                if(el) el.classList.remove('hidden');
+                this.showNotification(`Joined ${courseName} session`, 'success');
+                this.startCamera();
+            },
+            async startCamera() {
+                try {
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    const video = document.getElementById('local-video');
+                    if(video) video.srcObject = mediaStream;
+                    const placeholder = document.getElementById('camera-placeholder');
+                    if(placeholder) placeholder.classList.add('hidden');
+                } catch (err) {
+                    console.error("Camera Error:", err);
+                    this.showNotification("Camera access denied or unavailable", "error");
+                }
+            },
+            toggleCamera() {
+                if (mediaStream) {
+                    const videoTrack = mediaStream.getVideoTracks()[0];
+                    if(videoTrack) {
+                        videoTrack.enabled = !videoTrack.enabled;
+                        const placeholder = document.getElementById('camera-placeholder');
+                        if(placeholder) {
+                            if(videoTrack.enabled) placeholder.classList.add('hidden');
+                            else placeholder.classList.remove('hidden');
+                        }
+                    }
+                }
+            },
+            toggleMic() {
+                if (mediaStream) {
+                    const audioTrack = mediaStream.getAudioTracks()[0];
+                    if(audioTrack) audioTrack.enabled = !audioTrack.enabled;
+                }
+            },
+            leaveClass() {
+                if(mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+                const el = document.getElementById('live-room-interface');
+                if(el) el.classList.add('hidden');
+            },
+            async sendChatMessage(e) {
+                e.preventDefault();
+                const input = e.target.message;
+                const msg = input.value.trim();
+                if (!msg) return;
+                const chatMsg = { 
+                    user: currentUsername, 
+                    message: msg, 
+                    timestamp: new Date().toISOString(),
+                    createdBy: currentUsername || 'Anonymous',
+                    createdByUid: currentUser?.uid || 'guest'
+                };
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chats'), chatMsg);
+                    input.value = '';
+                } catch(err) { console.error(err); }
+            },
+
+            // --- REPORTS - USER-SPECIFIC LIVE ANALYTICS ---
+            renderCharts() {
+                const ctxStatus = document.getElementById('statusChart');
+                const ctxActivityLighting = document.getElementById('activityLightingChart');
+                const ctxUserActivity = document.getElementById('userActivityChart');
+                const ctxUserTaskProgress = document.getElementById('userTaskProgressChart');
+                
+                if(!ctxStatus) return;
+
+                // Update user identifier
+                const userIdEl = document.getElementById('user-analytics-id');
+                if(userIdEl) userIdEl.textContent = `Your Analytics • ${currentUsername || 'Guest User'}`;
+
+                const userTasks = allTasks.filter(t => t.assignee && t.assignee.toLowerCase().includes(currentUsername.toLowerCase()));
+                const userFeedbacks = allFeedbacks.filter(f => f.createdBy === currentUsername);
+                const completed = userTasks.filter(t => t.status === 'completed').length;
+                const pending = userTasks.length - completed;
+
+                // === 1. TASK COMPLETION PIE CHART (USER-SPECIFIC) ===
+                if(window.statusChartInstance) window.statusChartInstance.destroy();
+                
+                const noData = document.getElementById('chart-no-data');
+                if(userTasks.length === 0) {
+                    if(noData) noData.classList.remove('hidden');
+                } else {
+                    if(noData) noData.classList.add('hidden');
+                    window.statusChartInstance = new Chart(ctxStatus, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Completed', 'Pending'],
+                            datasets: [{ 
+                                data: [completed, pending], 
+                                backgroundColor: ['#10b981', '#f59e0b'],
+                                borderColor: ['#059669', '#d97706'],
+                                borderWidth: 2
+                            }]
+                        },
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            plugins: { 
+                                legend: { labels: { color: '#cbd5e1', font: { size: 12, weight: 'bold' } } } 
+                            } 
+                        }
+                    });
+                }
+
+                // === 2. REAL-TIME ACTIVITY LIGHTING CHART ===
+                if(ctxActivityLighting) {
+                    const now = new Date();
+                    const last24Hours = Array.from({length: 24}, (_, i) => {
+                        const d = new Date(now);
+                        d.setHours(d.getHours() - (23 - i));
+                        return d.toISOString().slice(11, 13) + ':00';
+                    });
+                    
+                    // Count user activities by hour
+                    const activityCounts = Array.from({length: 24}, (_, i) => {
+                        const targetHour = new Date(now);
+                        targetHour.setHours(targetHour.getHours() - (23 - i));
+                        const hourStart = new Date(targetHour).setMinutes(0, 0, 0);
+                        const hourEnd = hourStart + 3600000;
+                        
+                        const taskCount = userTasks.filter(t => {
+                            const t_time = new Date(t.createdAt).getTime();
+                            return t_time >= hourStart && t_time < hourEnd;
+                        }).length;
+                        
+                        const feedbackCount = userFeedbacks.filter(f => {
+                            const f_time = new Date(f.timestamp).getTime();
+                            return f_time >= hourStart && f_time < hourEnd;
+                        }).length;
+                        
+                        return taskCount + feedbackCount;
+                    });
+
+                    if(window.activityLightingChart) window.activityLightingChart.destroy();
+                    window.activityLightingChart = new Chart(ctxActivityLighting, {
+                        type: 'line',
+                        data: {
+                            labels: last24Hours,
+                            datasets: [{
+                                label: 'Your Activity (Tasks + Feedback)',
+                                data: activityCounts,
+                                borderColor: '#06b6d4',
+                                backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 5,
+                                pointBackgroundColor: '#06b6d4',
+                                pointBorderColor: '#0e7490',
+                                pointBorderWidth: 2,
+                                pointHoverRadius: 7
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { labels: { color: '#cbd5e1', font: { weight: 'bold' } } }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true,
+                                    ticks: { color: '#cbd5e1' },
+                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
+                                },
+                                x: { 
+                                    ticks: { color: '#cbd5e1' },
+                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // === 3. USER ACTIVITY TIMELINE (24 HOURS) ===
+                if(ctxUserActivity) {
+                    const last24h = Array.from({length: 24}, (_, i) => {
+                        const d = new Date();
+                        d.setHours(d.getHours() - (23 - i));
+                        return d.getHours() + ':00';
+                    });
+
+                    const tasksByHour = Array.from({length: 24}, (_, i) => {
+                        const targetHour = new Date();
+                        targetHour.setHours(targetHour.getHours() - (23 - i));
+                        const hourStart = new Date(targetHour).setMinutes(0, 0, 0);
+                        const hourEnd = hourStart + 3600000;
+                        return userTasks.filter(t => {
+                            const t_time = new Date(t.createdAt).getTime();
+                            return t_time >= hourStart && t_time < hourEnd;
+                        }).length;
+                    });
+
+                    if(window.userActivityChart) window.userActivityChart.destroy();
+                    window.userActivityChart = new Chart(ctxUserActivity, {
+                        type: 'bar',
+                        data: {
+                            labels: last24h,
+                            datasets: [{
+                                label: 'Tasks Created/Modified',
+                                data: tasksByHour,
+                                backgroundColor: '#3b82f6',
+                                borderColor: '#1e40af',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true,
+                                    ticks: { color: '#cbd5e1' },
+                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
+                                },
+                                x: { 
+                                    ticks: { color: '#cbd5e1' },
+                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // === 4. USER TASK PROGRESS CHART ===
+                if(ctxUserTaskProgress) {
+                    const allStats = {
+                        completed: completed,
+                        pending: pending,
+                        total: userTasks.length
+                    };
+
+                    if(window.userTaskProgressChart) window.userTaskProgressChart.destroy();
+                    window.userTaskProgressChart = new Chart(ctxUserTaskProgress, {
+                        type: 'radar',
+                        data: {
+                            labels: ['Completed', 'In Progress', 'Total Assigned'],
+                            datasets: [{
+                                label: 'Your Task Status',
+                                data: [completed, pending, userTasks.length],
+                                borderColor: '#8b5cf6',
+                                backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                                borderWidth: 2,
+                                pointRadius: 5,
+                                pointBackgroundColor: '#8b5cf6',
+                                pointBorderColor: '#6d28d9',
+                                pointBorderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                            scales: {
+                                r: {
+                                    ticks: { color: '#cbd5e1' },
+                                    grid: { color: 'rgba(100, 116, 139, 0.1)' }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // === UPDATE USER-SPECIFIC STATS ===
+                const statTotalTasks = document.getElementById('stat-total-tasks');
+                const statCompletedTasks = document.getElementById('stat-completed-tasks');
+                const statPendingTasks = document.getElementById('stat-pending-tasks');
+                const statFeedbackCount = document.getElementById('stat-feedback-count');
+
+                if(statTotalTasks) statTotalTasks.textContent = userTasks.length;
+                if(statCompletedTasks) statCompletedTasks.textContent = completed;
+                if(statPendingTasks) statPendingTasks.textContent = pending;
+                if(statFeedbackCount) statFeedbackCount.textContent = userFeedbacks.length;
+            },
+
+            // Auto-update analytics every 2 seconds for real-time Firebase updates
+            startLiveAnalytics() {
+                setInterval(() => {
+                    this.renderCharts();
+                }, 2000);
+            },
+
+            showLoginSuccessPopup(username) {
+                // Create success popup overlay
+                const popup = document.createElement('div');
+                popup.className = 'fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm';
+                popup.innerHTML = `
+                    <div class="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl border border-emerald-500 transform scale-95">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                <i class="fa-solid fa-check text-3xl text-emerald-600"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-2">Welcome Back!</h3>
+                            <p class="text-emerald-100 text-sm mb-6">Successfully logged in as <strong>${username}</strong></p>
+                            <button onclick="this.closest('.fixed').remove()" class="bg-white text-emerald-600 font-bold py-2 px-6 rounded-lg hover:bg-emerald-50 transition-colors shadow-lg">
+                                Continue to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(popup);
+                // Auto-close after 3 seconds
+                setTimeout(() => popup.remove(), 3000);
+            },
+
+            showNotification(msg, type) {
+                const area = document.getElementById('notification-area');
+                if(!area) return;
+                const el = document.createElement('div');
+                const colors = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+                el.className = `${colors} text-white px-6 py-3 rounded-lg shadow-xl text-sm font-medium transform transition-all duration-300 translate-y-10 opacity-0 flex items-center gap-3`;
+                el.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check' : 'fa-info-circle'}"></i> ${msg}`;
+                area.appendChild(el);
+                requestAnimationFrame(() => el.classList.remove('translate-y-10', 'opacity-0'));
+                setTimeout(() => { el.classList.add('translate-y-4', 'opacity-0'); setTimeout(() => el.remove(), 300); }, 3000);
+            }
+        };
+
+        // ROBUST STARTUP CHECK
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+        
+        document.getElementById('toggleSidebar').addEventListener('click', () => window.app.toggleSidebar());
+    </script>
+</body>
+
+</html>
