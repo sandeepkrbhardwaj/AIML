@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voyager | Harvest Your Logic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500;800&display=swap');
+
+        :root {
+            --voyager-green: #39FF14;
+            --bg-black: #000000;
+        }
+
+        body {
+            background-color: var(--bg-black);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .font-mono { font-family: 'JetBrains+Mono', monospace; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #111; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--voyager-green); }
+
+        /* Animations */
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        .scanline {
+            background: linear-gradient(to bottom, transparent 0%, rgba(57, 255, 20, 0.05) 50%, transparent 100%);
+            background-size: 100% 8px;
+            animation: scanline 12s linear infinite;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .animate-fade-in { animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Glassmorphism */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.005);
+            backdrop-filter: blur(80px);
+            -webkit-backdrop-filter: blur(80px);
+        }
+
+        .outline-text {
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
+            color: transparent;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+        }
+
+        .hidden-view { display: none !important; }
+
+        .btn-voyager {
+            background-color: var(--voyager-green);
+            color: black;
+            transition: all 0.3s ease;
+        }
+        .btn-voyager:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 0 25px rgba(57, 255, 20, 0.4);
+            transform: scale(1.02);
+        }
+
+        #mobile-menu {
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(-100%);
+        }
+        #mobile-menu.active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Ambience -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_20%,rgba(57,255,20,0.12)_0%,transparent_70%)]"></div>
+        <div class="scanline absolute inset-0 opacity-[0.03]"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-black/60 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer z-50" onclick="switchView('home')">
+                <!-- VC Cube Logo -->
+                <div class="w-8 h-8 drop-shadow-[0_0_8px_#39FF14]">
+                    <svg viewBox="0 0 100 100">
+                        <path d="M50 10 L88 32 L88 68 L50 90 L12 68 L12 32 Z" fill="#000" stroke="#39FF14" stroke-width="1.5" />
+                        <path d="M12 32 L50 54 L88 32 M50 54 L50 90" stroke="#39FF14" stroke-width="1" opacity="0.3" />
+                        <g fill="#39FF14" font-size="4.5" font-family="monospace" font-weight="bold">
+                            <text x="18" y="38">101</text><text x="28" y="44">010</text>
+                            <text x="18" y="48">011</text><text x="28" y="54">101</text>
+                            <text x="22" y="60">001</text>
+                        </g>
+                        <g fill="#39FF14" font-size="4.5" font-family="monospace" font-weight="bold">
+                            <text x="56" y="44">0010</text>
+                            <text x="56" y="52">1000</text>
+                            <text x="56" y="60">010</text>
+                        </g>
+                    </svg>
+                </div>
+                <span class="font-bold text-xs tracking-widest uppercase text-[#39FF14]">Voyager</span>
+            </div>
+            
+            <div class="flex items-center gap-4 sm:gap-8 z-50">
+                <div class="hidden md:flex items-center gap-10 text-[9px] font-black uppercase tracking-[0.3em] text-white/40">
+                    <button onclick="switchView('home')" id="nav-home" class="hover:text-white transition-colors text-white">HOME</button>
+                    <button onclick="switchView('mission')" id="nav-mission" class="hover:text-white transition-colors">MISSION</button>
+                    <button onclick="handleAboutClick()" class="hover:text-white transition-colors">ABOUT</button>
+                </div>
+                <a href="https://unstop.com/o/RzXQiI9?lb=MwJFn069&utm_medium=Share&utm_source=WhatsApp" target="_blank" class="px-4 py-2 sm:px-5 sm:py-2 border border-[#39FF14] text-[#39FF14] text-[9px] font-black uppercase tracking-widest rounded-sm hover:bg-[#39FF14] hover:text-black transition-all">REGISTER</a>
+                
+                <!-- Mobile Menu Button -->
+                <button class="md:hidden text-white" onclick="toggleMobileMenu()">
+                    <i data-lucide="menu" id="menu-icon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu" class="fixed inset-0 bg-black/95 z-40 md:hidden flex flex-col items-center justify-center gap-8 text-[11px] font-black uppercase tracking-[0.4em] text-white/40">
+            <button onclick="switchView('home'); toggleMobileMenu()" class="hover:text-[#39FF14] transition-colors">HOME</button>
+            <button onclick="switchView('mission'); toggleMobileMenu()" class="hover:text-[#39FF14] transition-colors">MISSION</button>
+            <button onclick="handleAboutClick(); toggleMobileMenu()" class="hover:text-[#39FF14] transition-colors">ABOUT</button>
+        </div>
+    </nav>
+
+    <!-- HOME VIEW -->
+    <main id="view-home" class="animate-fade-in">
+        <!-- Hero Section -->
+        <section class="pt-32 sm:pt-48 pb-12 sm:pb-20 px-6 relative z-10 max-w-4xl mx-auto text-center">
+            <div class="space-y-8 sm:space-y-12">
+                <div class="inline-flex items-center gap-2 text-[8px] sm:text-[10px] font-black text-[#39FF14]/50 uppercase tracking-[0.4em]">
+                   <span class="w-8 sm:w-12 h-px bg-[#39FF14]/20"></span> CURRENT PHASE: HARVEST <span class="w-8 sm:w-12 h-px bg-[#39FF14]/20"></span>
+                </div>
+                
+                <h1 class="text-4xl sm:text-7xl md:text-[100px] font-black leading-[1.1] sm:leading-[0.85] tracking-tighter uppercase glow-text">
+                    HARVEST <br />
+                    <span class="text-[#39FF14]">YOUR LOGIC</span>
+                </h1>
+                
+                <p class="text-white/40 text-[10px] sm:text-xs md:text-sm max-w-xl mx-auto leading-relaxed font-medium">
+                    Enter the realm of competitive intelligence. Hack the infrastructure, cultivate the leaderboards, and claim your digital legacy.
+                </p>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-4 pt-4 sm:pt-6">
+                    <a href="https://unstop.com/o/RzXQiI9?lb=MwJFn069&utm_medium=Share&utm_source=WhatsApp" target="_blank" class="btn-voyager px-8 py-4 sm:px-10 text-[10px] font-black uppercase tracking-widest rounded-sm flex items-center justify-center gap-2">
+                        START NOW <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </a>
+                    <button onclick="switchView('mission')" class="px-8 py-4 sm:px-10 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-white/5 transition-all">
+                        VIEW DOCS
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Countdown Section -->
+        <section class="py-12 sm:py-16 bg-white/[0.02] border-y border-white/5 relative z-10">
+            <div class="max-w-5xl mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-10 sm:gap-12">
+               <div class="space-y-2 text-center lg:text-left">
+                 <h2 class="text-xl sm:text-2xl font-black italic tracking-tighter uppercase leading-none">NEXT <br> DEPLOYMENT</h2>
+                 <p class="text-[8px] sm:text-[9px] font-bold text-white/20 uppercase tracking-widest">The algorithm seed cycle initializes soon.</p>
+               </div>
+               
+               <div class="flex gap-3 sm:gap-4 md:gap-8 font-mono">
+                  <div class="flex flex-col items-center">
+                    <div class="w-14 h-18 sm:w-16 sm:h-20 md:w-20 md:h-24 bg-black border border-white/10 flex items-center justify-center rounded-sm">
+                      <span id="cd-days" class="text-2xl sm:text-3xl md:text-5xl font-black text-[#39FF14] glow-text">00</span>
+                    </div>
+                    <span class="text-[7px] text-white/20 uppercase tracking-widest mt-2">Days</span>
+                  </div>
+                  <div class="flex flex-col items-center">
+                    <div class="w-14 h-18 sm:w-16 sm:h-20 md:w-20 md:h-24 bg-black border border-white/10 flex items-center justify-center rounded-sm">
+                      <span id="cd-hours" class="text-2xl sm:text-3xl md:text-5xl font-black text-[#39FF14] glow-text">00</span>
+                    </div>
+                    <span class="text-[7px] text-white/20 uppercase tracking-widest mt-2">Hours</span>
+                  </div>
+                  <div class="flex flex-col items-center">
+                    <div class="w-14 h-18 sm:w-16 sm:h-20 md:w-20 md:h-24 bg-black border border-white/10 flex items-center justify-center rounded-sm">
+                      <span id="cd-mins" class="text-2xl sm:text-3xl md:text-5xl font-black text-[#39FF14] glow-text">00</span>
+                    </div>
+                    <span class="text-[7px] text-white/20 uppercase tracking-widest mt-2">Mins</span>
+                  </div>
+                  <div class="flex flex-col items-center">
+                    <div class="w-14 h-18 sm:w-16 sm:h-20 md:w-20 md:h-24 bg-black border border-white/10 flex items-center justify-center rounded-sm">
+                      <span id="cd-secs" class="text-2xl sm:text-3xl md:text-5xl font-black text-[#39FF14] glow-text">00</span>
+                    </div>
+                    <span class="text-[7px] text-white/20 uppercase tracking-widest mt-2">Secs</span>
+                  </div>
+               </div>
+            </div>
+        </section>
+
+        <!-- System Directives (About Section) -->
+        <section id="about" class="py-20 sm:py-32 px-6 relative z-10 max-w-7xl mx-auto">
+            <div class="text-center mb-16 sm:mb-20 space-y-2">
+                <h2 class="text-2xl sm:text-3xl font-black uppercase italic tracking-tighter">SYSTEM <span class="text-[#39FF14]">DIRECTIVES</span></h2>
+                <div class="w-12 h-1 bg-[#39FF14]/20 mx-auto"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+               <div class="p-8 sm:p-10 glass-card border border-white/5 hover:border-[#39FF14]/20 transition-all group">
+                    <div class="w-10 h-10 mb-6 sm:mb-8 border border-white/10 flex items-center justify-center rounded-lg group-hover:scale-110 transition-transform text-[#39FF14]">
+                        <i data-lucide="cpu"></i>
+                    </div>
+                    <h3 class="text-lg font-black italic mb-4 uppercase">SECURE ACCESS</h3>
+                    <p class="text-white/30 text-[11px] leading-relaxed font-medium">Initialize your identity through Voyager systems and decrypt registration protocols for the harvest.</p>
+               </div>
+               <div class="p-8 sm:p-10 glass-card border border-white/5 hover:border-[#39FF14]/20 transition-all group">
+                    <div class="w-10 h-10 mb-6 sm:mb-8 border border-white/10 flex items-center justify-center rounded-lg group-hover:scale-110 transition-transform text-[#39FF14]">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <h3 class="text-lg font-black italic mb-4 uppercase">CORE RUNTIME</h3>
+                    <p class="text-white/30 text-[11px] leading-relaxed font-medium">Deploy optimization logic into the mainframe. Collaborative and adversarial environments will test your architecture.</p>
+               </div>
+               <div class="p-8 sm:p-10 glass-card border border-white/5 hover:border-[#39FF14]/20 transition-all group">
+                    <div class="w-10 h-10 mb-6 sm:mb-8 border border-white/10 flex items-center justify-center rounded-lg group-hover:scale-110 transition-transform text-[#39FF14]">
+                        <i data-lucide="shield"></i>
+                    </div>
+                    <h3 class="text-lg font-black italic mb-4 uppercase">YIELD OUTPUT</h3>
+                    <p class="text-white/30 text-[11px] leading-relaxed font-medium">Extract successful solutions and secure your final results on the global leaderboard with top yield.</p>
+               </div>
+            </div>
+        </section>
+
+        <!-- Archived Wins -->
+        <section class="py-20 sm:py-32 px-6 relative z-10 max-w-7xl mx-auto border-t border-white/5">
+             <div class="flex flex-col sm:flex-row items-center justify-between mb-16 sm:mb-20 gap-6">
+                <h2 class="text-2xl sm:text-3xl font-black uppercase italic tracking-tighter">ARCHIVED <span class="text-[#39FF14]">WINS</span></h2>
+                <div class="flex gap-2">
+                  <button class="w-10 h-10 border border-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all active:scale-95"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                  <button class="w-10 h-10 border border-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all active:scale-95"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                </div>
+             </div>
+
+             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                <!-- Win 1 -->
+                <div class="glass-card border border-white/5 overflow-hidden group">
+                    <div class="aspect-[4/3] relative overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
+                      <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=400" alt="HackIndia" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                      <div class="absolute top-4 left-4 px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest text-[#39FF14] bg-[#39FF14]/10">WINNER</div>
+                    </div>
+                    <div class="p-6 sm:p-8 space-y-4">
+                      <h3 class="text-lg font-black italic uppercase tracking-tighter">HackIndia Spark 4</h3>
+                      <p class="text-white/30 text-[10px] leading-relaxed font-medium uppercase tracking-wider">India's biggest Web3 & AI Hackathon success.</p>
+                      <button onclick="switchView('mission')" class="w-full py-3 border border-white/5 text-[9px] font-black uppercase tracking-widest hover:bg-[#39FF14] hover:text-black transition-all">VIEW</button>
+                    </div>
+                </div>
+                <!-- Win 2 -->
+                <div class="glass-card border border-white/5 overflow-hidden group">
+                    <div class="aspect-[4/3] relative overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
+                      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=400" alt="Global Algothon" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                      <div class="absolute top-4 left-4 px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest text-[#00F0FF] bg-[#00F0FF]/10">FINALIST</div>
+                    </div>
+                    <div class="p-6 sm:p-8 space-y-4">
+                      <h3 class="text-lg font-black italic uppercase tracking-tighter">Global Algothon</h3>
+                      <p class="text-white/30 text-[10px] leading-relaxed font-medium uppercase tracking-wider">Top 10 ranking in global logistics optimization.</p>
+                      <button class="w-full py-3 border border-white/5 text-[9px] font-black uppercase tracking-widest hover:bg-[#39FF14] hover:text-black transition-all">LOG_ENTRY</button>
+                    </div>
+                </div>
+                <!-- Win 3 -->
+                <div class="glass-card border border-white/5 overflow-hidden group">
+                    <div class="aspect-[4/3] relative overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
+                      <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=400" alt="Code Farming" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                      <div class="absolute top-4 left-4 px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest text-[#A855F7] bg-[#A855F7]/10">TOP-TIER</div>
+                    </div>
+                    <div class="p-6 sm:p-8 space-y-4">
+                      <h3 class="text-lg font-black italic uppercase tracking-tighter">Code Farming '26</h3>
+                      <p class="text-white/30 text-[10px] leading-relaxed font-medium uppercase tracking-wider">The ultimate 24-hour algorithmic sprint.</p>
+                      <a href="https://unstop.com/hackathons/code-farming-24-hour-codeathon-kcc-institute-of-management-and-technology-greater-noida-1675572?lb=MwJFn069&utm_medium=Share&utm_source=WhatsApp" target="_blank" class="block w-full py-3 border border-white/5 text-[9px] font-black text-center uppercase tracking-widest hover:bg-[#39FF14] hover:text-black transition-all">LOG_ENTRY</a>
+                    </div>
+                </div>
+             </div>
+        </section>
+
+        <!-- Ready to Execute CTA -->
+        <section class="py-24 sm:py-40 px-6 relative z-10 text-center bg-gradient-to-t from-[#39FF14]/5 to-transparent border-t border-white/5">
+            <div class="max-w-2xl mx-auto space-y-8 sm:space-y-10">
+              <h2 class="text-4xl sm:text-5xl md:text-7xl font-black uppercase italic tracking-tighter">READY TO <span class="text-[#39FF14]">EXECUTE?</span></h2>
+              <p class="text-white/40 text-[10px] sm:text-xs md:text-sm leading-relaxed uppercase tracking-widest italic">
+                The harvest cycle awaits. Authenticate your credentials now to secure your slot in the upcoming intake.
+              </p>
+              <div class="pt-4">
+                <a href="https://unstop.com/o/RzXQiI9?lb=MwJFn069&utm_medium=Share&utm_source=WhatsApp" target="_blank" class="px-10 py-5 sm:px-16 sm:py-6 bg-[#000] border-2 border-[#39FF14] text-[#39FF14] text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] rounded-sm hover:bg-[#39FF14] hover:text-black transition-all shadow-[0_0_50px_rgba(57,255,20,0.15)] inline-flex items-center justify-center gap-3 group">
+                  REGISTER VIA UNSTOP <i data-lucide="arrow-up-right" class="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+                </a>
+              </div>
+            </div>
+       </section>
+    </main>
+
+    <!-- MISSION VIEW -->
+    <main id="view-mission" class="hidden-view animate-fade-in">
+        <section class="pt-32 sm:pt-48 pb-20 sm:pb-32 px-6 relative z-10 max-w-7xl mx-auto">
+            <div class="text-center mb-16 sm:mb-32 space-y-6">
+              <div class="inline-flex items-center gap-4 text-[#39FF14] text-[8px] sm:text-[10px] font-black uppercase tracking-[0.5em] mb-4">
+                 <span class="w-8 sm:w-12 h-px bg-[#39FF14]/30"></span> Mission Protocol <span class="w-8 sm:w-12 h-px bg-[#39FF14]/30"></span>
+              </div>
+              <h2 class="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter uppercase italic leading-[1.1] sm:leading-[0.8] opacity-80">MISSION <br />ARCHIVES</h2>
+            </div>
+  
+            <div class="space-y-24 sm:space-y-40">
+                <!-- HackIndia Detail -->
+                <div class="p-1 glass-card rounded-2xl sm:rounded-[40px] border border-white/10 bg-white/5 overflow-hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-5 items-stretch">
+                      <div class="lg:col-span-2 p-8 sm:p-12 space-y-8 sm:space-y-10 flex flex-col justify-center">
+                        <div class="inline-flex items-center gap-2 text-[#39FF14] text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em]">
+                          <i data-lucide="activity" class="w-4 h-4"></i> _Historical_Analysis_Active
+                        </div>
+                        <h3 class="text-4xl sm:text-6xl font-black tracking-tighter uppercase italic leading-none">HackIndia Spark 4</h3>
+                        <p class="text-white/40 text-[10px] sm:text-xs leading-relaxed font-medium italic">
+                          India's largest intersection of Web3 & AI development. Hosted at KCC ITM, this mission stabilized decentralized infrastructure through high-intensity peer-to-peer logic harvest.
+                        </p>
+                        
+                        <div class="grid grid-cols-2 gap-y-6 sm:gap-y-10 border-y border-white/5 py-8 sm:py-10">
+                          <div>
+                            <p class="text-3xl sm:text-5xl font-black text-white italic">500+</p>
+                            <p class="text-[8px] sm:text-[9px] font-black uppercase text-white/30 tracking-widest mt-2">Active_Nodes</p>
+                          </div>
+                          <div>
+                            <p class="text-3xl sm:text-5xl font-black text-[#39FF14] italic">₹65k</p>
+                            <p class="text-[8px] sm:text-[9px] font-black uppercase text-white/30 tracking-widest mt-2">Yield_Pool</p>
+                          </div>
+                        </div>
+      
+                        <button onclick="toggleHackIndiaGallery()" id="gallery-btn" class="group inline-flex items-center gap-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[#39FF14] hover:text-white transition-colors">
+                          ACCESS VISUAL LOGS <i data-lucide="image" class="w-4 h-4 group-hover:rotate-12 transition-transform"></i>
+                        </button>
+                      </div>
+      
+                      <div class="lg:col-span-3 min-h-[300px] sm:min-h-[500px] relative overflow-hidden bg-black/40">
+                        <div id="hackindia-poster" class="absolute inset-0 grayscale opacity-40 group hover:grayscale-0 hover:opacity-100 transition-all duration-1000">
+                            <img src="https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?q=80&w=1200" class="w-full h-full object-cover" alt="Legacy">
+                            <div class="absolute inset-0 bg-gradient-to-l from-black/80 via-transparent to-transparent"></div>
+                        </div>
+                        <div id="hackindia-gallery" class="hidden-view absolute inset-0 p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in overflow-y-auto max-h-full">
+                            <div class="aspect-video rounded-lg overflow-hidden border border-[#39FF14]/20 relative">
+                                <img src="https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?q=80&w=800" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all">
+                            </div>
+                            <div class="aspect-video rounded-lg overflow-hidden border border-[#39FF14]/20 relative">
+                                <img src="https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=800" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all">
+                            </div>
+                            <div class="aspect-video rounded-lg overflow-hidden border border-[#39FF14]/20 relative">
+                                <img src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?q=80&w=800" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all">
+                            </div>
+                            <div class="aspect-video rounded-lg overflow-hidden border border-[#39FF14]/20 relative">
+                                <img src="https://images.unsplash.com/photo-1512314889357-e157c22f938d?q=80&w=800" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all">
+                            </div>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+
+                <!-- Code Farming detail -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-20 items-center">
+                    <div class="relative rounded-3xl sm:rounded-[50px] overflow-hidden border border-[#39FF14]/30 aspect-video glass-card shadow-2xl">
+                      <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10"></div>
+                      <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=1200" alt="Cyber Grid" class="w-full h-full object-cover opacity-60">
+                      <div class="absolute bottom-6 left-6 sm:bottom-12 sm:left-12 z-20">
+                        <h3 class="text-4xl sm:text-6xl font-black italic tracking-tighter uppercase leading-none">Code Farming <br> '26</h3>
+                      </div>
+                    </div>
+                    <div class="space-y-8 sm:space-y-12 text-center lg:text-left">
+                      <div class="flex flex-col sm:flex-row gap-8 sm:gap-16 border-b border-white/10 pb-10 sm:pb-12 items-center lg:items-start">
+                         <div>
+                           <p class="text-[8px] sm:text-[10px] text-white/30 font-black uppercase mb-2 tracking-[0.2em]">Cycle Starts</p>
+                           <p class="text-3xl sm:text-4xl font-black text-[#39FF14] italic">APR 29</p>
+                         </div>
+                         <div>
+                           <p class="text-[8px] sm:text-[10px] text-white/30 font-black uppercase mb-2 tracking-[0.2em]">Runtime</p>
+                           <p class="text-3xl sm:text-4xl font-black italic">24H</p>
+                         </div>
+                      </div>
+                      <div class="space-y-6 sm:space-y-8">
+                        <p class="text-white/50 text-base sm:text-xl leading-relaxed italic font-bold border-l-2 border-[#39FF14]/30 pl-4 sm:pl-6 text-left">
+                          "Optimize the organic. Yield the algorithmic."
+                        </p>
+                        <div class="grid grid-cols-2 gap-4 sm:gap-6">
+                          <div class="p-4 bg-white/5 rounded-lg border border-white/5 text-left">
+                            <p class="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-[#39FF14] mb-1">Squad_Size</p>
+                            <p class="text-[10px] sm:text-xs font-bold italic text-white/60">Strictly 0x3 Nodes</p>
+                          </div>
+                          <div class="p-4 bg-white/5 rounded-lg border border-white/5 text-left">
+                            <p class="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-[#39FF14] mb-1">Eligibility</p>
+                            <p class="text-[10px] sm:text-xs font-bold italic text-white/60">Same_Year Protocol</p>
+                          </div>
+                        </div>
+                      </div>
+                      <a href="https://unstop.com/o/RzXQiI9?lb=MwJFn069&utm_medium=Share&utm_source=WhatsApp" target="_blank" class="inline-flex items-center justify-center gap-4 px-10 py-5 sm:px-12 bg-[#39FF14] text-black font-black uppercase tracking-widest rounded-sm hover:brightness-110 transition-all shadow-[0_0_40px_rgba(57,255,20,0.4)] w-full sm:w-auto">
+                        INITIALIZE HARVEST <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+                      </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Instagram Integration Section -->
+    <section class="py-24 sm:py-40 px-6 relative border-t border-white/5 bg-gradient-to-b from-transparent to-[#39FF14]/5">
+        <div class="max-w-4xl mx-auto text-center space-y-10 sm:space-y-12 relative z-10">
+          <div class="relative inline-block group">
+             <div class="absolute inset-0 bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] blur-[50px] opacity-20 group-hover:opacity-50 transition-opacity animate-pulse"></div>
+             <div class="relative p-10 sm:p-12 rounded-full bg-[#000] border border-white/10 shadow-[0_0_50px_rgba(238,42,123,0.2)] transition-transform group-hover:scale-110">
+                <i data-lucide="instagram" class="w-10 h-10 sm:w-12 sm:h-12"></i>
+             </div>
+          </div>
+          
+          <div class="space-y-6">
+            <h2 class="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter uppercase italic leading-[1.1] sm:leading-[0.8]">
+              JOIN THE <br /><span class="text-[#39FF14]">NETWORK.</span>
+            </h2>
+            <p class="text-white/40 max-w-xl mx-auto font-medium text-sm sm:text-lg leading-relaxed italic px-4">
+              Experience the club behind the scenes. Highlights, algorithm drops, and real-time community logs.
+            </p>
+          </div>
+
+          <div class="flex flex-col items-center gap-6">
+            <a href="https://www.instagram.com/voyager.kccitm/" target="_blank" class="inline-flex items-center gap-6 px-12 py-6 sm:px-16 sm:py-8 bg-white text-black font-black uppercase tracking-[0.4em] rounded-full hover:bg-[#39FF14] transition-all hover:scale-110 shadow-[0_20px_80px_rgba(255,255,255,0.1)] active:scale-95 text-[10px] sm:text-xs md:text-sm">
+              FOLLOW ON INSTAGRAM <i data-lucide="arrow-up-right" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+            </a>
+            <p class="text-[8px] sm:text-[10px] font-black text-white/20 uppercase tracking-[0.5em] flex items-center gap-2">
+              <i data-lucide="heart" class="w-3 h-3 text-[#39FF14]"></i> 1.2K+ Voyagers Connected
+            </p>
+          </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-20 sm:py-32 px-6 sm:px-8 bg-[#000] border-t border-white/5 relative z-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12 sm:gap-20">
+          <div class="space-y-6 sm:space-y-8">
+            <div class="flex items-center gap-4">
+              <div class="w-8 h-8">
+                <svg viewBox="0 0 100 100">
+                    <path d="M50 10 L88 32 L88 68 L50 90 L12 68 L12 32 Z" fill="#000" stroke="#39FF14" stroke-width="1.5" />
+                    <path d="M12 32 L50 54 L88 32 M50 54 L50 90" stroke="#39FF14" stroke-width="1" opacity="0.3" />
+                </svg>
+              </div>
+              <span class="font-bold text-lg tracking-widest uppercase">Voyager</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-white/30 leading-relaxed uppercase tracking-[0.2em] max-w-[240px]">
+              The society core of logic architects and algorithmic growers. Optimized for high-yield development.
+            </p>
+            <div class="flex gap-6">
+               <a href="https://www.instagram.com/voyager.kccitm/" target="_blank" class="text-white/30 hover:text-[#39FF14] transition-colors"><i data-lucide="instagram" class="w-5 h-5"></i></a>
+               <a href="#" class="text-white/30 hover:text-[#39FF14] transition-colors"><i data-lucide="mail" class="w-5 h-5"></i></a>
+               <a href="#" class="text-white/30 hover:text-[#39FF14] transition-colors"><i data-lucide="users" class="w-5 h-5"></i></a>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 sm:gap-20 w-full md:w-auto">
+            <div class="space-y-6">
+              <h4 class="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.4em] text-white/20">Directory</h4>
+              <div class="flex flex-col gap-4 text-[10px] sm:text-[11px] font-bold text-white/40 uppercase tracking-widest">
+                <button onclick="switchView('home')" class="hover:text-[#39FF14] text-left">HOME</button>
+                <button onclick="switchView('mission')" class="hover:text-[#39FF14] text-left">MISSION</button>
+                <button onclick="handleAboutClick()" class="hover:text-[#39FF14] text-left uppercase">ABOUT</button>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+              <h4 class="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.4em] text-white/20">Protocols</h4>
+              <div class="flex flex-col gap-4 text-[10px] sm:text-[11px] font-bold text-white/40 uppercase tracking-widest">
+                <span class="text-white/20">Squad: 0x3</span>
+                <span class="text-white/20">Sync: 1-3 Year</span>
+                <span class="text-white/20">Auth: Coll_ID</span>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+              <h4 class="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.4em] text-white/20">Terminal_Updates</h4>
+              <div class="flex border-b border-white/10 pb-2 group focus-within:border-[#39FF14]/50 transition-colors">
+                <input type="email" placeholder="email@node.vcc" class="bg-transparent text-[10px] outline-none flex-1 font-mono uppercase" />
+                <button class="text-[#39FF14] opacity-50 hover:opacity-100 transition-opacity"><i data-lucide="arrow-up-right" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto mt-20 sm:mt-32 pt-12 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-[8px] sm:text-[9px] text-white/10 font-black uppercase tracking-[0.5em] gap-6 text-center">
+          <p>SYSTEM_ID: VCC_CORE_TERMINAL_2026_REL4</p>
+          <div class="flex items-center gap-4">
+             <a href="https://www.instagram.com/voyager.kccitm/" target="_blank" class="text-white/10 hover:text-[#39FF14] transition-colors"><i data-lucide="instagram" class="w-4 h-4"></i></a>
+             <p>© VOYAGER // ALL PARAMETERS OPTIMIZED.</p>
+          </div>
+        </div>
+    </footer>
+
+    <script>
+        // Lucide Icons initialization
+        lucide.createIcons();
+
+        // State Management
+        let currentView = 'home';
+        let galleryOpen = false;
+        let mobileMenuOpen = false;
+
+        // View Switching
+        function switchView(viewName) {
+            const home = document.getElementById('view-home');
+            const mission = document.getElementById('view-mission');
+            const navHome = document.getElementById('nav-home');
+            const navMission = document.getElementById('nav-mission');
+
+            if (viewName === 'home') {
+                home.classList.remove('hidden-view');
+                mission.classList.add('hidden-view');
+                navHome.classList.add('text-white');
+                navMission.classList.remove('text-white');
+            } else {
+                home.classList.add('hidden-view');
+                mission.classList.remove('hidden-view');
+                navHome.classList.remove('text-white');
+                navMission.classList.add('text-white');
+            }
+            currentView = viewName;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // About scroll logic
+        function handleAboutClick() {
+            if (currentView !== 'home') {
+                switchView('home');
+                setTimeout(scrollToAbout, 100);
+            } else {
+                scrollToAbout();
+            }
+        }
+
+        function scrollToAbout() {
+            const about = document.getElementById('about');
+            if (about) about.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Mobile Menu
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const icon = document.getElementById('menu-icon');
+            mobileMenuOpen = !mobileMenuOpen;
+            
+            if (mobileMenuOpen) {
+                menu.classList.add('active');
+                icon.setAttribute('data-lucide', 'x');
+            } else {
+                menu.classList.remove('active');
+                icon.setAttribute('data-lucide', 'menu');
+            }
+            lucide.createIcons();
+        }
+
+        // Gallery Toggle
+        function toggleHackIndiaGallery() {
+            const poster = document.getElementById('hackindia-poster');
+            const gallery = document.getElementById('hackindia-gallery');
+            const btn = document.getElementById('gallery-btn');
+
+            galleryOpen = !galleryOpen;
+
+            if (galleryOpen) {
+                poster.classList.add('hidden-view');
+                gallery.classList.remove('hidden-view');
+                btn.innerHTML = `HIDE VISUAL LOGS <i data-lucide="x" class="w-4 h-4"></i>`;
+            } else {
+                poster.classList.remove('hidden-view');
+                gallery.classList.add('hidden-view');
+                btn.innerHTML = `ACCESS VISUAL LOGS <i data-lucide="image" class="w-4 h-4 group-hover:rotate-12 transition-transform"></i>`;
+            }
+            lucide.createIcons();
+        }
+
+        // Countdown Logic
+        function updateCountdown() {
+            const targetDate = new Date('April 29, 2026 03:30:00').getTime();
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            if (distance < 0) return;
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('cd-days').textContent = String(days).padStart(2, '0');
+            document.getElementById('cd-hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('cd-mins').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('cd-secs').textContent = String(seconds).padStart(2, '0');
+        }
+
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+</body>
+</html>
